@@ -1,0 +1,450 @@
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { DiceTable, type SettledDie, type TableSettings } from './engine/DiceTable';
+import {
+  adjustCount,
+  cocPlan,
+  evaluate,
+  formulaPlan,
+  formulaText,
+  parseFormula,
+  setModifier,
+  type Plan,
+  type Sides,
+  type Term,
+} from './logic/roll';
+import { DEFAULT_SETTINGS, loadSaved, save, SETTINGS_VERSION, type CocState, type HistoryEntry } from './state';
+import { Coffer } from './ui/Coffer';
+import { Ledger } from './ui/Ledger';
+import { ConfirmModal, HelpModal, SettingsModal } from './ui/Modals';
+import { Dock, Loader, Verdict, type Phase, type ShownResult } from './ui/Stage';
+import { Toasts, type Toast } from './ui/controls';
+import { IconAstrolabe, IconCodex, IconLedger, IconReroll, IconSound, Sigil } from './ui/Icons';
+
+const DEFAULT_TERMS: Term[] = [{ type: 'dice', sign: 1, count: 1, sides: 20 }];
+
+function useMedia(q: string) {
+  const [m, setM] = useState(() => window.matchMedia(q).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(q);
+    const on = () => setM(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [q]);
+  return m;
+}
+
+export default function App() {
+  const saved = loadSaved();
+  const [settings, setSettings] = useState<TableSettings>(() => {
+    const s = { ...DEFAULT_SETTINGS, ...saved.settings };
+    // v2 made 0.35× the default speed; carry older saves over to it
+    if ((saved.v ?? 1) < 2) s.timeScale = DEFAULT_SETTINGS.timeScale;
+    return s;
+  });
+  const [terms, setTerms] = useState<Term[]>(saved.terms?.length ? saved.terms : DEFAULT_TERMS);
+  const [draft, setDraft] = useState(() => formulaText(saved.terms?.length ? saved.terms : DEFAULT_TERMS));
+  const [draftError, setDraftError] = useState('');
+  const [mode, setMode] = useState<'formula' | 'coc'>(saved.mode ?? 'formula');
+  const [coc, setCoc] = useState<CocState>(saved.coc ?? { skill: 50, name: '', bonus: 0, penalty: 0 });
+  const [history, setHistory] = useState<HistoryEntry[]>(saved.history ?? []);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [result, setResult] = useState<ShownResult | null>(null);
+  const [modal, setModal] = useState<null | 'settings' | 'help' | 'burn'>(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const [hasDice, setHasDice] = useState(false);
+  const [viewManual, setViewManual] = useState(false);
+  const mobile = useMedia('(max-width: 900px)');
+
+  const stage = useRef<HTMLDivElement>(null);
+  const tagLayer = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLElement>(null);
+  const coffer = useRef<HTMLElement>(null);
+  const ledger = useRef<HTMLElement>(null);
+  const dock = useRef<HTMLDivElement>(null);
+  const engine = useRef<DiceTable | null>(null);
+  const pending = useRef<Plan | null>(null);
+  const plans = useRef(new Map<number, Plan>());
+  const toastId = useRef(0);
+
+  // live mirror of state for engine callbacks
+  const live = useRef({ mode, terms, coc, draftError, phase });
+  live.current = { mode, terms, coc, draftError, phase };
+
+  /* persistence */
+  useEffect(() => save({ settings, v: SETTINGS_VERSION }), [settings]);
+  useEffect(() => save({ terms, mode, coc }), [terms, mode, coc]);
+  useEffect(() => save({ history: history.slice(0, 120) }), [history]);
+
+  const toast = useCallback((text: string, tone: Toast['tone'] = 'info') => {
+    const id = ++toastId.current;
+    setToasts((t) => [...t.slice(-2), { id, text, tone }]);
+    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+  }, []);
+
+  const buildPlan = useCallback((): Plan | null => {
+    const s = live.current;
+    if (s.mode === 'coc') return cocPlan(s.coc.skill, s.coc.name.trim(), s.coc.bonus, s.coc.penalty);
+    if (s.draftError) {
+      toast(`表达式有误：${s.draftError}`, 'warn');
+      return null;
+    }
+    if (!s.terms.some((t) => t.type === 'dice')) return null;
+    return formulaPlan(s.terms);
+  }, [toast]);
+
+  const onSettled = useCallback((id: number, dice: SettledDie[], info: { nudged: number; seconds: number }) => {
+    const plan = plans.current.get(id);
+    plans.current.delete(id);
+    if (import.meta.env.DEV) console.log(`[roll] settled in ${info.seconds.toFixed(2)}s of simulated time, ${info.nudged} nudge(s)`);
+    if (!plan) return;
+    const outcome = evaluate(plan, dice);
+    engine.current?.showTags(id, outcome.tags);
+    setResult({ id, plan, outcome, nudged: info.nudged, seconds: info.seconds });
+    setPhase('settled');
+    if (outcome.badge?.tone === 'gold') engine.current?.uiSound('chime');
+    const entry: HistoryEntry = {
+      id: Date.now() + Math.random(),
+      at: Date.now(),
+      mode: plan.mode,
+      formula: plan.mode === 'formula' ? plan.text : undefined,
+      coc: plan.mode === 'coc' ? { skill: plan.skill, name: plan.name, bonus: plan.bonus, penalty: plan.penalty } : undefined,
+      title: plan.mode === 'coc' ? `${plan.name || '检定'} · ${plan.skill}` : plan.text,
+      total: outcome.total,
+      parts: outcome.parts,
+      badge: outcome.badge,
+      note: outcome.note,
+    };
+    setHistory((h) => [entry, ...h].slice(0, 120));
+  }, []);
+
+  /* engine bootstrap */
+  useEffect(() => {
+    let alive = true;
+    let table: DiceTable | null = null;
+    const probe = document.createElement('canvas').getContext('webgl2');
+    if (!probe) {
+      setError('此浏览器不支持 WebGL2，无法显示 3D 场景。请使用较新版本的 Chrome、Edge、Firefox 或 Safari。');
+      return;
+    }
+    DiceTable.create(
+      stage.current!,
+      tagLayer.current!,
+      {
+        requestDice: () => {
+          const plan = buildPlan();
+          if (!plan) return null;
+          pending.current = plan;
+          return plan.phys.map((p) => ({ kind: p.kind }));
+        },
+        onRollStart: (id) => {
+          if (pending.current) plans.current.set(id, pending.current);
+          pending.current = null;
+          setPhase('rolling');
+          setHasDice(true);
+        },
+        onSettled,
+        onHoldChange: (h) => {
+          if (h) {
+            setPhase('holding');
+            setHasDice(true);
+          } else setPhase((p) => (p === 'holding' ? 'idle' : p));
+        },
+        onNotice: (m) => toast(m),
+        onViewChange: setViewManual,
+      },
+      settings,
+    )
+      .then((t) => {
+        if (!alive) {
+          t.dispose();
+          return;
+        }
+        table = t;
+        engine.current = t;
+        setReady(true);
+      })
+      .catch((e: unknown) => {
+        console.error(e);
+        setError('渲染器初始化失败：' + (e instanceof Error ? e.message : String(e)));
+      });
+    return () => {
+      alive = false;
+      table?.dispose();
+      engine.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    engine.current?.setSettings(settings);
+  }, [settings, ready]);
+
+  useEffect(() => {
+    engine.current?.setDimmed(modal !== null);
+  }, [modal, ready]);
+
+  /* layout → camera framing */
+  const measure = useCallback(() => {
+    const t = engine.current;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const hb = header.current?.getBoundingClientRect().bottom ?? 0;
+    const d = dock.current?.getBoundingClientRect();
+    let insets;
+    if (mobile) {
+      const sheetTop = coffer.current?.getBoundingClientRect().top ?? H;
+      const top = Math.min(sheetTop, d?.top ?? H);
+      insets = { left: 0, right: 0, top: hb, bottom: H - top, focusTop: hb + 96 };
+    } else {
+      const l = coffer.current?.getBoundingClientRect().right ?? 0;
+      const r = ledger.current?.getBoundingClientRect().left ?? W;
+      // the verdict banner lives above the tray; keep the tray clear of it when there is room
+      const reserve = H >= 700 ? 118 : 0;
+      const dockH = d ? H - d.top : 0;
+      insets = { left: l, right: W - r, top: hb + reserve, bottom: dockH * 0.62, focusTop: hb + 118, focusBottom: dockH + 6 };
+    }
+    const root = document.documentElement;
+    root.style.setProperty('--free-left', `${insets.left}px`);
+    root.style.setProperty('--free-right', `${insets.right}px`);
+    root.style.setProperty('--free-top', `${hb}px`);
+    root.style.setProperty('--free-bottom', `${insets.bottom}px`);
+    t?.setInsets(insets);
+  }, [mobile]);
+
+  useLayoutEffect(() => {
+    measure();
+    const ro = new ResizeObserver(measure);
+    [header, coffer, ledger, dock].forEach((r) => r.current && ro.observe(r.current));
+    window.addEventListener('resize', measure);
+    // the mobile sheet slides with a transform, which ResizeObserver cannot see
+    const sheet = coffer.current;
+    sheet?.addEventListener('transitionend', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      sheet?.removeEventListener('transitionend', measure);
+    };
+  }, [measure, ready, sheetCollapsed]);
+
+  /* actions */
+  const roll = useCallback(() => {
+    const t = engine.current;
+    if (!t) return;
+    t.unlockAudio();
+    if (live.current.phase === 'holding') return;
+    const plan = buildPlan();
+    if (!plan) {
+      if (!live.current.draftError) toast('还没有选择骰子。');
+      return;
+    }
+    t.uiSound('seal');
+    pending.current = plan;
+    t.roll(plan.phys.map((p) => ({ kind: p.kind })));
+    if (mobile) setLedgerOpen(false);
+  }, [buildPlan, toast, mobile]);
+
+  const clearTable = () => {
+    engine.current?.clear();
+    setResult(null);
+    setPhase('idle');
+    setHasDice(false);
+  };
+
+  const commitTerms = (t: Term[]) => {
+    setTerms(t);
+    setDraft(t.length ? formulaText(t) : '');
+    setDraftError('');
+  };
+
+  const onDraft = (s: string) => {
+    setDraft(s);
+    if (!s.trim()) {
+      setTerms([]);
+      setDraftError('');
+      return;
+    }
+    const r = parseFormula(s);
+    if ('error' in r) setDraftError(r.error);
+    else {
+      setTerms(r.terms);
+      setDraftError('');
+    }
+  };
+
+  const onAdjust = (sides: Sides, delta: number) => {
+    engine.current?.unlockAudio();
+    engine.current?.uiSound('tick');
+    const next = adjustCount(terms, sides, delta);
+    if (next === terms && delta > 0) toast('最多只能同时掷 36 颗骰子', 'warn');
+    commitTerms(next);
+  };
+
+  const rerollFrom = (e: HistoryEntry) => {
+    if (e.mode === 'coc' && e.coc) {
+      setMode('coc');
+      setCoc(e.coc);
+      live.current = { ...live.current, mode: 'coc', coc: e.coc };
+    } else if (e.formula) {
+      const r = parseFormula(e.formula);
+      if ('error' in r) return;
+      setMode('formula');
+      commitTerms(r.terms);
+      live.current = { ...live.current, mode: 'formula', terms: r.terms, draftError: '' };
+    }
+    roll();
+  };
+
+  const onPreset = (f: string) => {
+    const r = parseFormula(f);
+    if ('error' in r) return;
+    engine.current?.uiSound('tick');
+    commitTerms(r.terms);
+  };
+
+  /* keyboard */
+  useEffect(() => {
+    // Space always throws (unless typing) — even when a button still holds focus from a click
+    const spaceForUs = (e: KeyboardEvent) => {
+      if (modal || e.code !== 'Space') return false;
+      const el = document.activeElement as HTMLElement | null;
+      return !(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable));
+    };
+    const onDown = (e: KeyboardEvent) => {
+      if (!spaceForUs(e)) return;
+      e.preventDefault();
+      if (!e.repeat) roll();
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (spaceForUs(e)) e.preventDefault();
+    };
+    window.addEventListener('keydown', onDown, true);
+    window.addEventListener('keyup', onUp, true);
+    return () => {
+      window.removeEventListener('keydown', onDown, true);
+      window.removeEventListener('keyup', onUp, true);
+    };
+  }, [roll, modal]);
+
+  const openModal = (m: 'settings' | 'help') => {
+    engine.current?.unlockAudio();
+    engine.current?.uiSound('page');
+    setModal(m);
+  };
+
+  const patchSettings = (p: Partial<TableSettings>) => setSettings((s) => ({ ...s, ...p }));
+
+  return (
+    <div className={`app phase-${phase} ${ready ? 'is-ready' : ''} ${mobile ? 'is-mobile' : ''} ${mobile && sheetCollapsed ? 'sheet-collapsed' : ''}`}>
+      <div ref={stage} className="stage" />
+      <div ref={tagLayer} className="tag-layer" aria-hidden />
+
+      <header ref={header} className="topbar">
+        <div className="brand">
+          <Sigil className="brand-sigil" />
+          <div className="brand-text">
+            <h1>骰子书房</h1>
+            <p>Scriptorium · Aleae</p>
+          </div>
+        </div>
+        <div className="motto" aria-hidden>
+          <span>— Alea iacta est —</span>
+        </div>
+        <nav className="top-actions">
+          {mobile && (
+            <button className="icon-btn" onClick={() => setLedgerOpen(true)} aria-label="掷骰记录" data-tip="掷骰记录">
+              <IconLedger width={19} height={19} />
+              {history.length > 0 && <span className="dot-count">{Math.min(99, history.length)}</span>}
+            </button>
+          )}
+          <button
+            className={`icon-btn ${settings.sound ? '' : 'is-muted'}`}
+            onClick={() => {
+              engine.current?.unlockAudio();
+              patchSettings({ sound: !settings.sound });
+            }}
+            aria-label={settings.sound ? '静音' : '开启音效'}
+            data-tip={settings.sound ? '静音' : '开启音效'}
+          >
+            <IconSound muted={!settings.sound} width={19} height={19} />
+          </button>
+          <button className="icon-btn" onClick={() => openModal('help')} aria-label="说明" data-tip="说明">
+            <IconCodex width={19} height={19} />
+          </button>
+          <button className="icon-btn" onClick={() => openModal('settings')} aria-label="设置" data-tip="设置">
+            <IconAstrolabe width={19} height={19} />
+          </button>
+        </nav>
+      </header>
+
+      <Coffer
+        ref={coffer}
+        mode={mode}
+        onMode={(m) => {
+          engine.current?.uiSound('tick');
+          setMode(m);
+        }}
+        terms={terms}
+        onAdjust={onAdjust}
+        onModifier={(m) => commitTerms(setModifier(terms, m))}
+        onClearDice={() => commitTerms([])}
+        draft={draft}
+        onDraft={onDraft}
+        draftError={draftError}
+        onPreset={onPreset}
+        coc={coc}
+        onCoc={setCoc}
+        onSubmit={roll}
+        collapsed={mobile && sheetCollapsed}
+        onToggleCollapsed={mobile ? () => setSheetCollapsed((c) => !c) : undefined}
+      />
+
+      <Ledger
+        ref={ledger}
+        entries={history}
+        onReroll={rerollFrom}
+        onBurn={() => setModal('burn')}
+        drawer={mobile}
+        open={ledgerOpen}
+        onClose={() => setLedgerOpen(false)}
+      />
+      {mobile && ledgerOpen && <div className="scrim" onClick={() => setLedgerOpen(false)} />}
+
+      <Verdict result={result} visible={phase === 'settled' && !!result} />
+
+      <button className={`view-reset ${viewManual ? 'is-shown' : ''}`} onClick={() => engine.current?.resetView()} tabIndex={viewManual ? 0 : -1}>
+        <IconReroll width={14} height={14} />
+        重置视角
+      </button>
+
+      <Dock
+        ref={dock}
+        phase={phase}
+        onRoll={roll}
+        onClear={clearTable}
+        canClear={hasDice}
+        touch={mobile}
+        fast={settings.timeScale >= 1}
+        onFast={() => patchSettings({ timeScale: settings.timeScale >= 1 ? DEFAULT_SETTINGS.timeScale : 1 })}
+      />
+
+      <Toasts items={toasts} />
+
+      <SettingsModal open={modal === 'settings'} onClose={() => setModal(null)} settings={settings} onChange={patchSettings} />
+      <HelpModal open={modal === 'help'} onClose={() => setModal(null)} />
+      <ConfirmModal
+        open={modal === 'burn'}
+        onClose={() => setModal(null)}
+        onConfirm={() => setHistory([])}
+        title="清空记录"
+        body="将删除全部掷骰记录，且无法恢复。确定吗？"
+        confirmText="清空"
+      />
+
+      <Loader done={ready} error={error} />
+    </div>
+  );
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070504" />
+    <meta name="description" content="骰子书房 · Scriptorium Aleae：三维物理掷骰，支持 d4 至 d100、D&D 表达式与 CoC 检定。" />
+    <title>骰子书房 · Scriptorium Aleae</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- loaded without blocking render: the page falls back to local serif CJK fonts if Google is unreachable -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #070504; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="color:#c8b38c;font-family:serif;text-align:center;margin-top:40vh">需要启用 JavaScript。</p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
