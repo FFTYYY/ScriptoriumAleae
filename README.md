@@ -1,46 +1,48 @@
+<div align="center">
+
+<img src="docs/dice.png" alt="程序随机生成的一组骰子：d4、d6、d8、d10、d12、d20、d%" width="100%">
+
 # ScriptoriumAleae · 骰子书房
 
-三维物理掷骰网页。d4 / d6 / d8 / d10 / d12 / d20 / d%，支持 D&D 表达式与 CoC 7e 检定。
+在浏览器里用物理模拟掷骰子，给跑团用。
 
-在线版本：推送到 GitHub 后由 GitHub Pages 自动发布，地址为 `https://<你的用户名>.github.io/ScriptoriumAleae/`。
+**[在线使用 →](https://fftyyy.github.io/ScriptoriumAleae/)**
 
-## 本地开发
+</div>
+
+![运行截图](docs/screenshot.jpg)
+
+## 这是什么
+
+一张放在书房里的 3D 骰盘。骰子是真的被“掷”出去的：它们在盘里翻滚、互相碰撞、慢慢停下，朝上的那一面就是结果。没有动画剧本，也不预先决定点数。
+
+支持 d4、d6、d8、d10、d12、d20 和百分骰（十位骰 + 个位骰），可以直接用来跑 D&D 或《克苏鲁的呼唤》。
+
+## 特点
+
+- **真实物理**：刚体模拟。每颗骰子按均匀密度计算质量和转动惯量，质心在正中，没有“灌铅”；出手时的位置、速度和旋转来自浏览器的密码学随机数。
+- **每颗骰子都不一样**：配色、花纹和材质由程序当场生成，有树脂、宝石、星云、磨砂金属、珍珠等。数字颜色按对比度自动挑选，保证看得清；也可以换成固定样式。
+- **两种掷法**：点按钮直接掷；或者在桌面上按住，拖动摇一摇再甩出去，力度和方向跟着你的手势。
+- **表达式**：`3d6 + 2`、`2d20kh1`（优势）、`4d6dl1`（去掉最低）、`1d100` 等。
+- **CoC 检定**：输入技能值，自动判定大成功、极难、困难、成功、失败、大失败；奖励骰和惩罚骰会真的多掷一颗十位骰。
+- **可以细看**：骰子停下后镜头会自动靠近；滚轮缩放，中键拖动旋转，右键拖动平移。
+- 默认 0.35 倍速慢放，能看清翻滚，也可以切到真实速度；另有碰撞音效、掷骰记录，手机上也能用。
+
+## 本地运行
+
+需要 Node.js 22 或以上。
 
 ```bash
 npm install
-npm run dev        # 开发服务器 http://localhost:5173，改代码即时刷新
-npm run build      # 类型检查并构建到 dist/
-npm run preview    # 本地预览构建结果
+npm run dev
 ```
 
-需要支持 WebGL2 的浏览器。构建结果需要通过网页服务器访问；直接双击 `dist/index.html` 时，浏览器会拦截其中的模块脚本。
+`npm run build` 会构建出一个纯静态网站（`dist/`）。推送到 `main` 分支后，GitHub Actions 会自动把它发布到 GitHub Pages。
 
-## 部署到 GitHub Pages
+## 技术
 
-仓库已包含 `.github/workflows/deploy.yml`：每次推送到 `main` 分支，GitHub 会自动构建并发布。
+TypeScript、React、three.js、cannon-es、Vite。场景里的木纹、毛毡、皮革、羊皮纸，以及骰子的花纹和数字，全部由代码生成，没有用到图片素材。
 
-首次使用只需一步：仓库 **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**。之后在仓库的 Actions 页能看到每次发布的进度。
+## 许可
 
-## 结构
-
-| 路径 | 内容 |
-| --- | --- |
-| `index.html` | 入口 |
-| `src/engine/dice.ts` | 多面体生成（凸包）、圆角网格、数字贴图、均匀密度的体积与转动惯量、读数 |
-| `src/engine/DiceTable.ts` | three.js 场景、cannon-es 物理世界、投掷 / 手持、静止判定、镜头、后期 |
-| `src/engine/materials.ts` | 骰面着色器（物体空间程序化纹理）与 14 套固定样式 |
-| `src/engine/stylegen.ts` | 随机生成每颗骰子的配色与材质，按亮度对比度挑选数字颜色 |
-| `src/engine/scenery.ts` · `textures.ts` | 骰盘、毛毡、烛台、书本、羊皮纸等，全部程序化生成 |
-| `src/engine/audio.ts` | 按碰撞冲量实时合成的音效 |
-| `src/logic/roll.ts` | 表达式解析、掷骰计划、结果与 CoC 成功等级 |
-| `src/ui/*` | 自绘组件：滚动条、弹窗、步进器、滑块、开关、分段选择 |
-
-## 关于公平
-
-- 点数从不预设：初始位置、朝向、速度、角速度取自 `crypto.getRandomValues`，之后完全由物理决定。
-- 质心位于几何中心；转动惯量按均匀密度对多面体精确积分（替代 cannon-es 默认的包围盒近似）。
-- 骰子斜靠未放平时，只对该骰施加一次轻微冲量，让它按物理规律倒向一侧。
-
-## 视角
-
-骰子停下后：滚轮缩放，中键拖动旋转，右键拖动平移（触屏：双指捏合缩放、拖动旋转）。
+[MIT](LICENSE)
