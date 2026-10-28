@@ -118,6 +118,13 @@ export const IconFlame = (p: P) => (
   </svg>
 );
 
+export const IconExport = (p: P) => (
+  <svg {...base({ viewBox: '0 0 24 24', ...p })}>
+    <path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+    <path d="M4.5 15.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" opacity=".75" />
+  </svg>
+);
+
 export const IconClose = (p: P) => (
   <svg {...base({ viewBox: '0 0 24 24', ...p })}>
     <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />

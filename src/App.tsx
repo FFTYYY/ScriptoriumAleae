@@ -433,6 +433,7 @@ export default function App() {
         entries={history}
         onReroll={rerollFrom}
         onBurn={() => setModal('burn')}
+        onNotify={toast}
         drawer={compact}
         open={ledgerOpen}
         onClose={() => setLedgerOpen(false)}

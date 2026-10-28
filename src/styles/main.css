@@ -3556,6 +3556,67 @@ button {
   font-size: 14px;
 }
 
+
+/* ───────────────────────── export menu ───────────────────────── */
+
+.export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  background: var(--noise), linear-gradient(180deg, #221810, #130d09);
+  border: 1px solid var(--line-2);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 3px rgba(8, 6, 4, 0.5),
+    inset 0 0 0 4px rgba(201, 162, 74, 0.12);
+  animation: menuIn 0.22s var(--ease) both;
+}
+
+.export-menu button {
+  padding: 9px 14px;
+  text-align: left;
+  white-space: nowrap;
+  font-family: var(--f-cn);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.export-menu button:hover,
+.export-menu button:focus-visible {
+  color: var(--gold-hi);
+  background: rgba(201, 162, 74, 0.1);
+}
+
+.export-menu button + button {
+  border-top: 1px dashed rgba(201, 162, 74, 0.14);
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.icon-btn.is-active {
+  color: var(--gold-hi);
+  border-color: var(--line);
+}
+
+:lang(en) .export-menu button {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
 /* ───────────────────────── English ───────────────────────── */
 
 /* Latin text reads best in the Latin faces; the wide CJK tracking is dropped */

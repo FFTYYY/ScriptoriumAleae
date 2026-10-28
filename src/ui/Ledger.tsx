@@ -1,9 +1,10 @@
-import { forwardRef, type CSSProperties } from 'react';
+import { forwardRef, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { HistoryEntry } from '../state';
 import { toRoman } from '../state';
-import { Corner, IconClose, IconFeather, IconFlame, IconReroll } from './Icons';
+import { Corner, IconClose, IconExport, IconFeather, IconFlame, IconReroll } from './Icons';
 import { ScrollArea } from './controls';
 import { badgeWords, useI18n } from '../i18n';
+import { copyText, download, fileName, logToCsv, logToText } from '../logic/exportLog';
 
 function timeText(at: number) {
   const d = new Date(at);
@@ -17,10 +18,48 @@ export interface LedgerProps {
   open?: boolean;
   onClose?: () => void;
   drawer?: boolean;
+  /** short confirmation after an export */
+  onNotify?: (text: string, tone?: 'info' | 'warn') => void;
 }
 
-export const Ledger = forwardRef<HTMLElement, LedgerProps>(function Ledger({ entries, onReroll, onBurn, open, onClose, drawer }, ref) {
+export const Ledger = forwardRef<HTMLElement, LedgerProps>(function Ledger({ entries, onReroll, onBurn, open, onClose, drawer, onNotify }, ref) {
   const { t } = useI18n();
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // close the export menu on an outside press or Escape
+  useEffect(() => {
+    if (!menu) return;
+    const onDown = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setMenu(false);
+      }
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true);
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [menu]);
+
+  const exportAs = async (kind: 'copy' | 'txt' | 'csv') => {
+    setMenu(false);
+    if (kind === 'copy') {
+      const ok = await copyText(logToText(entries, t));
+      onNotify?.(ok ? t.ledger.copied : t.ledger.copyFailed, ok ? 'info' : 'warn');
+      return;
+    }
+    const name = fileName(kind);
+    if (kind === 'txt') download(name, logToText(entries, t), 'text/plain');
+    else download(name, logToCsv(entries, t), 'text/csv');
+    onNotify?.(t.ledger.downloaded(name));
+  };
+
   return (
     <aside ref={ref} className={`panel ledger ${drawer ? 'is-drawer' : ''} ${open ? 'is-open' : ''}`} aria-label={t.ledger.title}>
       <Corner className="corner tl" />
@@ -32,7 +71,31 @@ export const Ledger = forwardRef<HTMLElement, LedgerProps>(function Ledger({ ent
           {t.ledger.title}
           <span className="latin">Liber Factorum</span>
         </h2>
-        <div className="panel-head-actions">
+        <div className="panel-head-actions" ref={menuRef}>
+          <button
+            className={`icon-btn ghost sm ${menu ? 'is-active' : ''}`}
+            onClick={() => setMenu((m) => !m)}
+            disabled={!entries.length}
+            aria-label={t.ledger.export}
+            aria-haspopup="menu"
+            aria-expanded={menu}
+            data-tip={menu ? '' : t.ledger.export}
+          >
+            <IconExport width={17} height={17} />
+          </button>
+          {menu && (
+            <div className="export-menu" role="menu">
+              <button role="menuitem" onClick={() => exportAs('copy')}>
+                {t.ledger.exportCopy}
+              </button>
+              <button role="menuitem" onClick={() => exportAs('txt')}>
+                {t.ledger.exportTxt}
+              </button>
+              <button role="menuitem" onClick={() => exportAs('csv')}>
+                {t.ledger.exportCsv}
+              </button>
+            </div>
+          )}
           <button className="icon-btn ghost sm" onClick={onBurn} disabled={!entries.length} aria-label={t.ledger.clear} data-tip={t.ledger.clear}>
             <IconFlame width={17} height={17} />
           </button>
