@@ -291,11 +291,25 @@ export function Slider({
 }) {
   const track = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  const active = useRef(false);
+  // a touch that has not yet shown whether it is a horizontal drag or a vertical swipe scrolling the dialog
+  const press = useRef<{ x: number; y: number } | null>(null);
   const clamp = (v: number) => Math.max(min, Math.min(max, Math.round(v / step) * step));
   const fromEvent = (e: ReactPointerEvent) => {
     const r = track.current!.getBoundingClientRect();
     const t = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
     onChange(clamp(min + t * (max - min)));
+  };
+  const startDrag = (e: ReactPointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    active.current = true;
+    setDragging(true);
+    fromEvent(e);
+  };
+  const endDrag = () => {
+    press.current = null;
+    active.current = false;
+    setDragging(false);
   };
   const onKey = (e: ReactKeyboardEvent) => {
     const big = (max - min) / 10;
@@ -326,13 +340,24 @@ export function Slider({
       aria-valuenow={value}
       onKeyDown={onKey}
       onPointerDown={(e) => {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        setDragging(true);
-        fromEvent(e);
+        if (e.pointerType === 'touch') press.current = { x: e.clientX, y: e.clientY };
+        else startDrag(e);
       }}
-      onPointerMove={(e) => dragging && fromEvent(e)}
-      onPointerUp={() => setDragging(false)}
-      onPointerCancel={() => setDragging(false)}
+      onPointerMove={(e) => {
+        const p = press.current;
+        if (p) {
+          const dx = Math.abs(e.clientX - p.x);
+          if (dx > 6 && dx > Math.abs(e.clientY - p.y)) {
+            press.current = null;
+            startDrag(e);
+          }
+        } else if (active.current) fromEvent(e);
+      }}
+      onPointerUp={(e) => {
+        if (press.current) fromEvent(e); // a tap
+        endDrag();
+      }}
+      onPointerCancel={endDrag}
     >
       <div className="slider-rail">
         <div className="slider-fill" style={{ width: `${pct}%` }} />

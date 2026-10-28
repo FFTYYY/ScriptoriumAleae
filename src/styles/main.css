@@ -1257,7 +1257,8 @@ kbd {
   position: relative;
   height: 28px;
   cursor: pointer;
-  touch-action: none;
+  /* vertical swipes still scroll the dialog; the slider takes horizontal drags */
+  touch-action: pan-y;
 }
 
 .slider-rail {
@@ -2937,8 +2938,11 @@ button {
   .modal-root {
     padding: 10px;
   }
+  /* a percentage would resolve against the content-sized grid row and not cap anything;
+     dvh leaves out the mobile address bar */
   .modal {
-    max-height: calc(100% - 4px);
+    max-height: calc(100vh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
   .modal-head {
     padding: 22px 20px 4px;
