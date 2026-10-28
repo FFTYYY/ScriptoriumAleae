@@ -4,7 +4,7 @@
 
 # ScriptoriumAleae · Dice Study
 
-Physically simulated dice in the browser, for tabletop games.
+Physically simulated dice in the browser.
 
 **[Try it online →](https://fftyyy.github.io/ScriptoriumAleae/?lang=en)**
 
@@ -18,7 +18,7 @@ Physically simulated dice in the browser, for tabletop games.
 
 A 3D dice tray on a desk in a study. The dice are actually thrown: they tumble across the tray, knock into each other and come to rest, and the face pointing up is the result. There is no scripted animation, and no result is decided in advance.
 
-It has d4, d6, d8, d10, d12, d20 and percentile dice (a tens die plus a units die), so it works for D&D or *Call of Cthulhu* as it is.
+It has d4, d6, d8, d10, d12, d20 and percentile dice (a tens die plus a units die), with D&D-style formulas and *Call of Cthulhu* checks built in.
 
 ## Features
 
