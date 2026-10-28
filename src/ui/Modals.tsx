@@ -117,7 +117,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           </h3>
           <ul className="codex-list">
             <li>
-              在左侧<b>骰子盒</b>中点击骰子增加数量，右键或点 <kbd>−</kbd> 减少；也可以直接输入<b>表达式</b>。
+              在<b>骰子盒</b>中点击骰子增加数量，右键、点 <kbd>−</kbd> 或在手机上长按减少；也可以直接输入<b>表达式</b>。
             </li>
             <li>
               点击下方的<b>掷骰按钮</b>，或按 <kbd>空格</kbd>，骰子会从骰盘一侧掷出。默认以 0.35 倍速播放，点右侧的<b>快放</b>按钮切到真实速度。

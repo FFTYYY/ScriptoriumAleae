@@ -79,6 +79,8 @@ interface Insets {
   bottom: number;
   focusTop: number;
   focusBottom: number;
+  /** lay the tray lengthwise down the screen regardless of the free area's shape */
+  portrait: boolean;
 }
 
 // 300 Hz: a die at full speed travels under a centimetre per step, so impacts never visibly sink in
@@ -197,7 +199,7 @@ export class DiceTable {
   private frameNo = 0;
   private width = 1;
   private height = 1;
-  private insets: Insets = { left: 0, right: 0, top: 0, bottom: 0, focusTop: 0, focusBottom: 0 };
+  private insets: Insets = { left: 0, right: 0, top: 0, bottom: 0, focusTop: 0, focusBottom: 0, portrait: false };
   /** Orbit camera: azimuth / elevation / distance around a target on the felt, each easing toward a goal. */
   private view = {
     az: 0,
@@ -475,8 +477,8 @@ export class DiceTable {
   }
 
   /** Screen-space margins of the UI around the table; the `focus*` margins apply when leaning in on settled dice. */
-  setInsets(i: { left: number; right: number; top: number; bottom: number; focusTop?: number; focusBottom?: number }) {
-    this.insets = { ...i, focusTop: i.focusTop ?? i.top, focusBottom: i.focusBottom ?? i.bottom };
+  setInsets(i: { left: number; right: number; top: number; bottom: number; focusTop?: number; focusBottom?: number; portrait?: boolean }) {
+    this.insets = { ...i, focusTop: i.focusTop ?? i.top, focusBottom: i.focusBottom ?? i.bottom, portrait: i.portrait ?? false };
     this.fitCamera();
   }
 
@@ -1127,7 +1129,7 @@ export class DiceTable {
     const v = this.view;
     const freeW = Math.max(80, W - insets.left - insets.right);
     const freeH = Math.max(80, H - insets.top - insets.bottom);
-    const portrait = freeW / freeH < 0.95;
+    const portrait = insets.portrait || freeW / freeH < 0.95;
     cam.aspect = W / H;
     cam.fov = portrait ? 38 : 30;
     const dx = insets.left + freeW / 2 - W / 2;

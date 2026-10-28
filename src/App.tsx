@@ -39,6 +39,8 @@ export default function App() {
     const s = { ...DEFAULT_SETTINGS, ...saved.settings };
     // v2 made 0.35× the default speed; carry older saves over to it
     if ((saved.v ?? 1) < 2) s.timeScale = DEFAULT_SETTINGS.timeScale;
+    // phones and tablets start on medium quality to spare the battery
+    if (!saved.settings?.quality && window.matchMedia('(pointer: coarse)').matches) s.quality = 'medium';
     return s;
   });
   const [terms, setTerms] = useState<Term[]>(saved.terms?.length ? saved.terms : DEFAULT_TERMS);
@@ -57,7 +59,13 @@ export default function App() {
   const [sheetCollapsed, setSheetCollapsed] = useState(false);
   const [hasDice, setHasDice] = useState(false);
   const [viewManual, setViewManual] = useState(false);
-  const mobile = useMedia('(max-width: 900px)');
+  // desktop: panels left and right · sheet: portrait phones/tablets, controls in a bottom sheet ·
+  // side: landscape phones, controls in a left column
+  const narrow = useMedia('(max-width: 900px)');
+  const short = useMedia('(max-height: 520px) and (orientation: landscape)');
+  const coarse = useMedia('(pointer: coarse)');
+  const layout: 'desktop' | 'sheet' | 'side' = short ? 'side' : narrow ? 'sheet' : 'desktop';
+  const compact = layout !== 'desktop';
 
   const stage = useRef<HTMLDivElement>(null);
   const tagLayer = useRef<HTMLDivElement>(null);
@@ -195,10 +203,18 @@ export default function App() {
     const hb = header.current?.getBoundingClientRect().bottom ?? 0;
     const d = dock.current?.getBoundingClientRect();
     let insets;
-    if (mobile) {
-      const sheetTop = coffer.current?.getBoundingClientRect().top ?? H;
-      const top = Math.min(sheetTop, d?.top ?? H);
-      insets = { left: 0, right: 0, top: hb, bottom: H - top, focusTop: hb + 96 };
+    if (layout === 'sheet') {
+      // header · table · result strip · buttons · sheet, top to bottom; the table keeps clear of the strip
+      const band = 62;
+      const bottom = H - ((d?.top ?? H) - band);
+      // on a phone held upright, the tray stands lengthwise to use the tall screen
+      insets = { left: 0, right: 0, top: hb + 2, bottom, focusTop: hb + 2, focusBottom: bottom, portrait: W < 600 };
+    } else if (layout === 'side') {
+      // controls on the left, result strip above the table, buttons below it
+      const l = coffer.current?.getBoundingClientRect().right ?? 0;
+      const band = 62;
+      const bottom = d ? H - d.top + 2 : 0;
+      insets = { left: l, right: 0, top: hb + band, bottom, focusTop: hb + band, focusBottom: bottom };
     } else {
       const l = coffer.current?.getBoundingClientRect().right ?? 0;
       const r = ledger.current?.getBoundingClientRect().left ?? W;
@@ -213,7 +229,7 @@ export default function App() {
     root.style.setProperty('--free-top', `${hb}px`);
     root.style.setProperty('--free-bottom', `${insets.bottom}px`);
     t?.setInsets(insets);
-  }, [mobile]);
+  }, [layout]);
 
   useLayoutEffect(() => {
     measure();
@@ -244,8 +260,8 @@ export default function App() {
     t.uiSound('seal');
     pending.current = plan;
     t.roll(plan.phys.map((p) => ({ kind: p.kind })));
-    if (mobile) setLedgerOpen(false);
-  }, [buildPlan, toast, mobile]);
+    if (compact) setLedgerOpen(false);
+  }, [buildPlan, toast, compact]);
 
   const clearTable = () => {
     engine.current?.clear();
@@ -338,7 +354,7 @@ export default function App() {
   const patchSettings = (p: Partial<TableSettings>) => setSettings((s) => ({ ...s, ...p }));
 
   return (
-    <div className={`app phase-${phase} ${ready ? 'is-ready' : ''} ${mobile ? 'is-mobile' : ''} ${mobile && sheetCollapsed ? 'sheet-collapsed' : ''}`}>
+    <div className={`app phase-${phase} layout-${layout} ${ready ? 'is-ready' : ''} ${layout === 'sheet' && sheetCollapsed ? 'sheet-collapsed' : ''}`}>
       <div ref={stage} className="stage" />
       <div ref={tagLayer} className="tag-layer" aria-hidden />
 
@@ -354,7 +370,7 @@ export default function App() {
           <span>— Alea iacta est —</span>
         </div>
         <nav className="top-actions">
-          {mobile && (
+          {compact && (
             <button className="icon-btn" onClick={() => setLedgerOpen(true)} aria-label="掷骰记录" data-tip="掷骰记录">
               <IconLedger width={19} height={19} />
               {history.length > 0 && <span className="dot-count">{Math.min(99, history.length)}</span>}
@@ -398,8 +414,8 @@ export default function App() {
         coc={coc}
         onCoc={setCoc}
         onSubmit={roll}
-        collapsed={mobile && sheetCollapsed}
-        onToggleCollapsed={mobile ? () => setSheetCollapsed((c) => !c) : undefined}
+        collapsed={layout === 'sheet' && sheetCollapsed}
+        onToggleCollapsed={layout === 'sheet' ? () => setSheetCollapsed((c) => !c) : undefined}
       />
 
       <Ledger
@@ -407,11 +423,11 @@ export default function App() {
         entries={history}
         onReroll={rerollFrom}
         onBurn={() => setModal('burn')}
-        drawer={mobile}
+        drawer={compact}
         open={ledgerOpen}
         onClose={() => setLedgerOpen(false)}
       />
-      {mobile && ledgerOpen && <div className="scrim" onClick={() => setLedgerOpen(false)} />}
+      {compact && ledgerOpen && <div className="scrim" onClick={() => setLedgerOpen(false)} />}
 
       <Verdict result={result} visible={phase === 'settled' && !!result} />
 
@@ -426,7 +442,7 @@ export default function App() {
         onRoll={roll}
         onClear={clearTable}
         canClear={hasDice}
-        touch={mobile}
+        touch={coarse}
         fast={settings.timeScale >= 1}
         onFast={() => patchSettings({ timeScale: settings.timeScale >= 1 ? DEFAULT_SETTINGS.timeScale : 1 })}
       />

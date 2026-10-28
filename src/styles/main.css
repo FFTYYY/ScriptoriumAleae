@@ -30,7 +30,6 @@
   --free-right: 0px;
   --free-top: 0px;
   --free-bottom: 0px;
-  --sheet-h: min(54vh, 470px);
 }
 
 *,
@@ -2712,28 +2711,31 @@ kbd {
   }
 }
 
-@media (max-width: 900px) {
-  :root {
-    --sheet-h: min(42vh, 350px);
-  }
+/* ── compact chrome: phones and small tablets, either orientation ── */
+
+button {
+  touch-action: manipulation;
+}
+
+@media (max-width: 900px), (max-height: 520px) {
   .topbar {
-    height: 62px;
-    padding: 0 14px;
+    height: calc(50px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
   }
   .brand {
-    gap: 10px;
+    gap: 9px;
   }
   .brand-sigil {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
   .brand h1 {
-    font-size: 19px;
-    letter-spacing: 0.24em;
+    font-size: 18px;
+    letter-spacing: 0.22em;
   }
   .brand p {
-    font-size: 8.5px;
-    letter-spacing: 0.32em;
+    font-size: 8px;
+    letter-spacing: 0.3em;
   }
   .top-actions {
     gap: 6px;
@@ -2746,84 +2748,55 @@ kbd {
     display: none;
   }
 
-  .coffer {
-    left: 0;
-    right: 0;
-    top: auto;
-    bottom: 0;
-    width: auto;
-    height: var(--sheet-h);
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
-    transition:
-      opacity 1s 0.35s,
-      transform 0.5s var(--ease);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .coffer.is-collapsed {
-    transform: translateY(calc(100% - 62px));
-  }
-  .coffer .corner.bl,
-  .coffer .corner.br {
-    display: none;
-  }
-  .sheet-handle {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 110px;
-    height: 24px;
-    z-index: 4;
-  }
-  .sheet-handle span {
-    display: block;
-    width: 42px;
-    height: 3px;
-    margin: 10px auto 0;
-    border-radius: 2px;
-    background: var(--line-2);
+  /* controls */
+  .panel-head h2 {
+    font-size: 16px;
+    letter-spacing: 0.3em;
   }
   .coffer .panel-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 20px 16px 8px;
-  }
-  .coffer .panel-head h2 {
-    font-size: 16px;
-    letter-spacing: 0.3em;
   }
   .coffer .panel-head h2 .latin {
-    font-size: 12px;
+    display: none;
   }
   .coffer .segmented {
     margin-top: 0;
-    flex: 0 1 220px;
+    flex: 0 1 210px;
   }
   .segmented button {
     font-size: 12.5px;
     letter-spacing: 0.06em;
+    padding: 7px 4px;
   }
   .dice-grid {
-    grid-template-columns: repeat(8, 1fr);
-    gap: 5px;
-    padding: 6px 14px 0;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 4px 14px 0;
   }
   .die-card {
     aspect-ratio: auto;
-    height: 74px;
+    height: 48px;
+  }
+  .die-card-main,
+  .die-card-clear {
+    flex-direction: row;
+    gap: 7px;
   }
   .die-card-icon {
-    width: 26px;
-    height: 26px;
-    margin-bottom: 2px;
+    width: 24px;
+    height: 24px;
+    margin: 0;
   }
   .die-card-zh {
     display: none;
+  }
+  .die-card-clear .clear-glyph {
+    font-size: 20px;
+    height: auto;
+    line-height: 1;
   }
   .die-badge {
     top: -6px;
@@ -2833,30 +2806,63 @@ kbd {
     font-size: 10px;
   }
   .die-minus {
-    width: 18px;
-    height: 18px;
-    top: 2px;
-    left: 2px;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 3px;
+    transform: translateY(-50%);
+  }
+  /* make room for the minus button so it never sits on the die icon */
+  .die-card.has .die-card-main {
+    padding-left: 20px;
+  }
+  .field-row {
+    padding-top: 12px;
+  }
+  .inscription {
+    padding-top: 12px;
+  }
+  .inscription-input {
+    font-size: 19px;
+    padding: 4px 2px 5px;
+  }
+  .presets {
+    padding-top: 12px;
+  }
+  .mini-fleuron {
+    display: none;
   }
   .field-row,
   .inscription,
   .presets,
   .thresholds,
   .skill-dial {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
   .coc-note {
-    margin-left: 16px;
-    margin-right: 16px;
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+  .skill-dial {
+    padding-top: 12px;
+  }
+  .skill-value {
+    margin: 6px 0 10px;
+  }
+  .stepper-lg .step-val {
+    font-size: 26px;
+    min-width: 80px;
   }
 
+  /* record book slides in from the right */
   .ledger.is-drawer {
     top: 0;
     right: 0;
     bottom: 0;
     width: min(88vw, 370px);
     z-index: 30;
+    padding-top: env(safe-area-inset-top);
     transform: translateX(105%);
     transition:
       opacity 1s 0.35s,
@@ -2866,65 +2872,57 @@ kbd {
     transform: none;
   }
 
-  .dock {
-    bottom: calc(var(--sheet-h) + 8px);
-    transition:
-      opacity 1s 0.6s,
-      bottom 0.5s var(--ease);
-  }
-  .sheet-collapsed .dock {
-    bottom: 72px;
-  }
+  /* buttons */
   .seal {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
   }
   .seal-glyph {
-    font-size: 30px;
+    font-size: 23px;
+  }
+  .seal-ring {
+    inset: -6px;
   }
   .dock-row {
-    gap: 18px;
+    gap: 22px;
   }
-  .dock-hint {
-    margin-top: 6px;
-    font-size: 11.5px;
-    letter-spacing: 0.1em;
-  }
-  .toasts {
-    bottom: calc(var(--sheet-h) + 130px);
-  }
-  .view-reset {
-    bottom: calc(var(--sheet-h) + 128px);
-  }
-  .sheet-collapsed .view-reset {
-    bottom: 192px;
+  .dock .icon-btn {
+    width: 38px;
+    height: 38px;
   }
 
+  /* result: a single slim strip */
   .verdict {
     min-width: 0;
     width: 100%;
+    max-width: 640px;
     grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 12px;
-    padding: 9px 14px 10px;
+    padding: 7px 14px 8px;
   }
-  .verdict-rule {
-    display: none;
+  .verdict.has-badge {
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
-  .verdict-total {
-    font-size: 46px;
-  }
-  .verdict-parts {
-    max-height: 44px;
-  }
+  .verdict-kicker,
+  .verdict-rule,
   .verdict-note,
   .verdict-foot {
     display: none;
   }
   .verdict-title {
-    font-size: 15px;
+    margin-top: 0;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .verdict.has-badge {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+  .verdict-parts {
+    margin-top: 3px;
+    max-height: 40px;
+  }
+  .verdict-total {
+    font-size: 40px;
+    padding-bottom: 0;
   }
   .stamp {
     margin: 0 -4px 0 0;
@@ -2934,25 +2932,29 @@ kbd {
   .stamp em {
     font-size: 7px;
   }
-  .kicker-fleuron {
-    width: 30px;
-  }
 
+  /* dialogs */
   .modal-root {
     padding: 10px;
   }
+  .modal {
+    max-height: calc(100% - 4px);
+  }
   .modal-head {
-    padding: 24px 22px 4px;
+    padding: 22px 20px 4px;
   }
   .modal-head h2 {
     font-size: 20px;
     letter-spacing: 0.34em;
   }
+  .modal-fleuron {
+    margin: 6px auto 2px;
+  }
   .modal-body .scroll-content {
-    padding: 10px 22px 26px;
+    padding: 10px 20px 24px;
   }
   .modal-foot {
-    padding: 14px 22px 22px;
+    padding: 14px 20px 20px;
   }
   .set-grid {
     grid-template-columns: 1fr;
@@ -2966,26 +2968,559 @@ kbd {
   }
 }
 
-@media (max-width: 520px) {
-  .dice-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .die-card {
-    height: 60px;
-  }
-  .die-card-main {
-    flex-direction: row;
-    gap: 6px;
-  }
-  .die-card-icon {
-    margin: 0;
-  }
-  .coffer .panel-head h2 .latin {
-    display: none;
-  }
+@media (max-width: 420px) {
   .brand p {
     display: none;
   }
+}
+
+/* ── portrait phones & tablets: header · table · result · buttons · sheet ── */
+
+.layout-sheet {
+  --sheet-h: clamp(250px, 38vh, 330px);
+  --sheet-cur: var(--sheet-h);
+}
+
+@supports (height: 1dvh) {
+  .layout-sheet {
+    --sheet-h: clamp(250px, 38dvh, 330px);
+  }
+}
+
+.layout-sheet.sheet-collapsed {
+  --sheet-cur: calc(52px + env(safe-area-inset-bottom));
+}
+
+.layout-sheet .coffer {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 0;
+  width: auto;
+  height: var(--sheet-h);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  transition:
+    opacity 1s 0.35s,
+    transform 0.5s var(--ease);
+}
+
+.layout-sheet .coffer.is-collapsed {
+  transform: translateY(calc(100% - 52px - env(safe-area-inset-bottom)));
+}
+
+.layout-sheet .coffer .corner.bl,
+.layout-sheet .coffer .corner.br {
+  display: none;
+}
+
+.layout-sheet .sheet-handle {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 22px;
+  z-index: 4;
+}
+
+.layout-sheet .sheet-handle span {
+  display: block;
+  width: 42px;
+  height: 3px;
+  margin: 8px auto 0;
+  border-radius: 2px;
+  background: var(--line-2);
+}
+
+.layout-sheet .coffer .panel-head {
+  padding: 16px 14px 8px;
+}
+
+.layout-sheet .dock {
+  bottom: calc(var(--sheet-cur) + 4px);
+  transition:
+    opacity 1s 0.6s,
+    bottom 0.5s var(--ease);
+}
+
+/* the hint sits in the result strip's slot until there is a result */
+.layout-sheet .dock-hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(100% + 22px);
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  transition: opacity 0.3s;
+}
+
+.layout-sheet .dock.phase-settled .dock-hint {
+  opacity: 0;
+}
+
+.layout-sheet .verdict-wrap {
+  top: auto;
+  bottom: calc(var(--sheet-cur) + 70px);
+  left: 0;
+  right: 0;
+  padding: 0 10px;
+  transition: bottom 0.5s var(--ease);
+}
+
+.layout-sheet .verdict {
+  transform: translateY(10px);
+}
+
+.layout-sheet .verdict.is-shown {
+  transform: none;
+}
+
+.layout-sheet .toasts {
+  bottom: calc(var(--sheet-cur) + 140px);
+}
+
+.layout-sheet .view-reset {
+  bottom: calc(var(--sheet-cur) + 136px);
+}
+
+/* tablets in portrait have room for one row of eight */
+@media (min-width: 560px) {
+  .layout-sheet .dice-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .layout-sheet .die-card {
+    height: 64px;
+  }
+  .layout-sheet .die-card-main,
+  .layout-sheet .die-card-clear {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .layout-sheet .die-minus {
+    top: 3px;
+    transform: none;
+  }
+  .layout-sheet .die-card.has .die-card-main {
+    padding-left: 0;
+  }
+}
+
+/* ── landscape phones: controls in a left column, table on the right ── */
+
+.layout-side .topbar {
+  height: calc(44px + env(safe-area-inset-top));
+}
+
+.layout-side .brand-sigil {
+  width: 26px;
+  height: 26px;
+}
+
+.layout-side .brand h1 {
+  font-size: 16px;
+}
+
+.layout-side .brand p {
+  display: none;
+}
+
+.layout-side .icon-btn {
+  width: 34px;
+  height: 34px;
+}
+
+.layout-side .coffer {
+  left: 0;
+  top: calc(44px + env(safe-area-inset-top));
+  bottom: 0;
+  width: min(300px, 40vw);
+  padding-left: env(safe-area-inset-left);
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.layout-side .coffer .corner.bl,
+.layout-side .coffer .corner.tl {
+  display: none;
+}
+
+.layout-side .coffer .panel-head {
+  padding: 10px 12px 6px;
+}
+
+.layout-side .coffer .panel-head h2 {
+  display: none;
+}
+
+.layout-side .coffer .segmented {
+  flex: 1 1 auto;
+}
+
+.layout-side .die-card {
+  height: 44px;
+}
+
+.layout-side .dock {
+  bottom: max(6px, env(safe-area-inset-bottom));
+}
+
+.layout-side .seal {
+  width: 52px;
+  height: 52px;
+}
+
+.layout-side .seal-glyph {
+  font-size: 20px;
+}
+
+.layout-side .dock .icon-btn {
+  width: 34px;
+  height: 34px;
+}
+
+.layout-side .dock-hint {
+  display: none;
+}
+
+.layout-side .verdict-wrap {
+  top: calc(var(--free-top) + 4px);
+  padding: 0 10px;
+}
+
+.layout-side .toasts {
+  bottom: 74px;
+}
+
+.layout-side .view-reset {
+  bottom: 70px;
+}
+
+/* ── compact control panel on phones: every field on as few rows as possible ── */
+
+.layout-sheet {
+  --sheet-h: calc(212px + env(safe-area-inset-bottom));
+}
+
+.layout-sheet .coffer .panel-head {
+  padding: 15px 12px 6px;
+}
+
+.layout-sheet .coffer .panel-head h2 {
+  display: none;
+}
+
+.layout-sheet .coffer .segmented {
+  flex: 1 1 auto;
+}
+
+.layout-sheet .coffer .segmented button,
+.layout-side .coffer .segmented button {
+  padding: 5px 4px;
+}
+
+/* free throw: dice · formula + modifier · presets */
+.layout-sheet .coffer-body,
+.layout-side .coffer-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'dice dice'
+    'formula mod'
+    'presets presets';
+  column-gap: 10px;
+  padding: 2px 12px 10px;
+}
+
+.layout-sheet .dice-grid,
+.layout-side .dice-grid {
+  grid-area: dice;
+  padding: 0;
+}
+
+.layout-sheet .dice-grid {
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+}
+
+.layout-sheet .die-card {
+  height: 46px;
+}
+
+.layout-sheet .die-card-main,
+.layout-sheet .die-card-clear {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layout-sheet .die-card-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.layout-sheet .die-card-name {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+
+.layout-sheet .die-card.has .die-card-main {
+  padding-left: 0;
+}
+
+.layout-sheet .die-minus {
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  transform: none;
+}
+
+.layout-sheet .die-badge {
+  top: -6px;
+  right: -4px;
+  min-width: 17px;
+  height: 17px;
+  font-size: 9.5px;
+}
+
+.layout-sheet .die-card-clear .clear-glyph {
+  font-size: 16px;
+}
+
+.layout-sheet .coffer-body > .inscription,
+.layout-side .coffer-body > .inscription {
+  grid-area: formula;
+  align-self: end;
+  padding: 8px 0 0;
+}
+
+.layout-sheet .coffer-body > .inscription .field-label,
+.layout-side .coffer-body > .inscription .field-label,
+.layout-sheet .mod-row .field-label,
+.layout-side .mod-row .field-label {
+  display: none;
+}
+
+.layout-sheet .coffer-body .inscription-input,
+.layout-side .coffer-body .inscription-input {
+  font-size: 18px;
+  padding: 4px 2px;
+}
+
+.layout-sheet .coffer-body > .inscription:not(.has-error) .inscription-msg,
+.layout-side .coffer-body > .inscription:not(.has-error) .inscription-msg {
+  display: none;
+}
+
+.layout-sheet .coffer-body .inscription-msg,
+.layout-side .coffer-body .inscription-msg {
+  margin-top: 3px;
+  font-size: 11.5px;
+  min-height: 0;
+}
+
+.layout-sheet .mod-row,
+.layout-side .mod-row {
+  grid-area: mod;
+  align-self: end;
+  padding: 8px 0 0;
+}
+
+.layout-sheet .mod-row .step-btn,
+.layout-side .mod-row .step-btn {
+  width: 30px;
+}
+
+.layout-sheet .mod-row .step-val,
+.layout-side .mod-row .step-val {
+  min-width: 44px;
+  padding: 6px 2px;
+  font-size: 14px;
+}
+
+.layout-sheet .coffer-body > .presets,
+.layout-side .coffer-body > .presets {
+  grid-area: presets;
+  padding: 8px 0 0;
+}
+
+.layout-sheet .chips,
+.layout-side .chips {
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+}
+
+.layout-sheet .chips::-webkit-scrollbar,
+.layout-side .chips::-webkit-scrollbar {
+  display: none;
+}
+
+.layout-sheet .chip,
+.layout-side .chip {
+  flex: none;
+  padding: 4px 9px 5px;
+}
+
+/* on narrow phones the cards are too small for a − button: long-press removes a die instead */
+@media (max-width: 559px) {
+  .layout-sheet .die-minus {
+    display: none;
+  }
+}
+
+.die-card-main {
+  -webkit-touch-callout: none;
+}
+
+/* keep the hint and buttons legible over a bright patch of the scene */
+.layout-sheet .dock::before {
+  content: '';
+  position: absolute;
+  left: -50vw;
+  right: -50vw;
+  bottom: -6px;
+  height: 128px;
+  background: linear-gradient(to top, rgba(6, 4, 3, 0.88), rgba(6, 4, 3, 0.5) 55%, transparent);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* CoC check: skill value + slider · thresholds · bonus | penalty */
+.layout-sheet .coc-body,
+.layout-side .coc-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'dial dial'
+    'th th'
+    'bonus penalty';
+  column-gap: 12px;
+  padding: 2px 12px 10px;
+}
+
+.layout-sheet .coc-name,
+.layout-side .coc-name,
+.layout-sheet .coc-note,
+.layout-side .coc-note,
+.layout-sheet .skill-dial .field-label,
+.layout-side .skill-dial .field-label {
+  display: none;
+}
+
+.layout-sheet .skill-dial,
+.layout-side .skill-dial {
+  grid-area: dial;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 0 0;
+}
+
+.layout-sheet .skill-value,
+.layout-side .skill-value {
+  margin: 0;
+}
+
+.layout-sheet .skill-dial .slider,
+.layout-side .skill-dial .slider {
+  flex: 1 1 auto;
+}
+
+.layout-sheet .stepper-lg .step-btn,
+.layout-side .stepper-lg .step-btn {
+  width: 34px;
+}
+
+.layout-sheet .stepper-lg .step-val,
+.layout-side .stepper-lg .step-val {
+  min-width: 56px;
+  padding: 4px 2px;
+  font-size: 20px;
+}
+
+.layout-sheet .thresholds,
+.layout-side .thresholds {
+  grid-area: th;
+  display: flex;
+  gap: 6px;
+  padding: 8px 0 0;
+}
+
+.layout-sheet .thresholds > div,
+.layout-side .thresholds > div {
+  flex: 1;
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.layout-sheet .th-label,
+.layout-side .th-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.layout-sheet .th-val,
+.layout-side .th-val {
+  font-size: 13px;
+}
+
+.layout-sheet .coc-bonus,
+.layout-side .coc-bonus {
+  grid-area: bonus;
+}
+
+.layout-sheet .coc-penalty,
+.layout-side .coc-penalty {
+  grid-area: penalty;
+}
+
+.layout-sheet .coc-bonus,
+.layout-sheet .coc-penalty,
+.layout-side .coc-bonus,
+.layout-side .coc-penalty {
+  gap: 6px;
+  padding: 8px 0 0;
+}
+
+.layout-sheet .coc-bonus .field-label,
+.layout-sheet .coc-penalty .field-label,
+.layout-side .coc-bonus .field-label,
+.layout-side .coc-penalty .field-label {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.layout-sheet .coc-bonus .field-label .latin,
+.layout-sheet .coc-penalty .field-label .latin,
+.layout-side .coc-bonus .field-label .latin,
+.layout-side .coc-penalty .field-label .latin {
+  display: none;
+}
+
+.layout-sheet .coc-bonus .step-btn,
+.layout-sheet .coc-penalty .step-btn,
+.layout-side .coc-bonus .step-btn,
+.layout-side .coc-penalty .step-btn {
+  width: 28px;
+}
+
+.layout-sheet .coc-bonus .step-val,
+.layout-sheet .coc-penalty .step-val,
+.layout-side .coc-bonus .step-val,
+.layout-side .coc-penalty .step-val {
+  min-width: 32px;
+  padding: 5px 2px;
+  font-size: 14px;
 }
 
 @media (prefers-reduced-motion: reduce) {

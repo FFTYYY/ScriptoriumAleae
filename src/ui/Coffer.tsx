@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { DieKind } from '../engine/dice';
 import { countOf, modifierOf, physicalCount, MAX_PHYSICAL, type Sides, type Term } from '../logic/roll';
 import type { CocState } from '../state';
@@ -77,38 +77,15 @@ export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, re
         {p.mode === 'formula' ? (
           <div className="coffer-body">
             <div className="dice-grid">
-              {DICE.map((d) => {
-                const n = countOf(p.terms, d.sides);
-                const full = phys + (d.sides === 100 ? 2 : 1) > MAX_PHYSICAL;
-                return (
-                  <div key={d.sides} className={`die-card ${n ? 'has' : ''}`}>
-                    <button
-                      className="die-card-main"
-                      onClick={() => p.onAdjust(d.sides, 1)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        if (n) p.onAdjust(d.sides, -1);
-                      }}
-                      disabled={full}
-                      aria-label={`增加一颗 ${d.name}，当前 ${n} 颗`}
-                    >
-                      <DieIcon kind={d.kind} className="die-card-icon" />
-                      <span className="die-card-name">{d.name}</span>
-                      <span className="die-card-zh">{d.zh}</span>
-                    </button>
-                    {n > 0 && (
-                      <>
-                        <span className="die-badge" aria-hidden>
-                          {n}
-                        </span>
-                        <button className="die-minus" onClick={() => p.onAdjust(d.sides, -1)} aria-label={`减少一颗 ${d.name}`}>
-                          <IconMinus width={12} height={12} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+              {DICE.map((d) => (
+                <DieCard
+                  key={d.sides}
+                  die={d}
+                  count={countOf(p.terms, d.sides)}
+                  full={phys + (d.sides === 100 ? 2 : 1) > MAX_PHYSICAL}
+                  onAdjust={p.onAdjust}
+                />
+              ))}
               <button className="die-card die-card-clear" onClick={p.onClearDice} disabled={phys === 0}>
                 <span className="clear-glyph">∅</span>
                 <span className="die-card-name">清空</span>
@@ -116,7 +93,7 @@ export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, re
               </button>
             </div>
 
-            <div className="field-row">
+            <div className="field-row mod-row">
               <div className="field-label">
                 调整值<span className="latin">Modificator</span>
               </div>
@@ -169,6 +146,63 @@ export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, re
   );
 });
 
+/** Tap adds a die; right-click, the − button, or a long press on touch screens removes one. */
+function DieCard({ die, count, full, onAdjust }: { die: (typeof DICE)[number]; count: number; full: boolean; onAdjust: (sides: Sides, delta: number) => void }) {
+  const timer = useRef<number | undefined>(undefined);
+  const longPressed = useRef(false);
+  const startPress = (e: ReactPointerEvent) => {
+    if (e.pointerType !== 'touch' || !count) return;
+    longPressed.current = false;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      longPressed.current = true;
+      onAdjust(die.sides, -1);
+      navigator.vibrate?.(12);
+    }, 450);
+  };
+  const endPress = () => window.clearTimeout(timer.current);
+  return (
+    <div className={`die-card ${count ? 'has' : ''}`}>
+      <button
+        className="die-card-main"
+        onPointerDown={startPress}
+        onPointerUp={endPress}
+        onPointerLeave={endPress}
+        onPointerCancel={endPress}
+        onClick={() => {
+          // the release after a long press is not a tap
+          if (longPressed.current) {
+            longPressed.current = false;
+            return;
+          }
+          onAdjust(die.sides, 1);
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (longPressed.current) return;
+          if (count) onAdjust(die.sides, -1);
+        }}
+        disabled={full}
+        aria-label={`增加一颗 ${die.name}，当前 ${count} 颗（长按或右键减少）`}
+      >
+        <DieIcon kind={die.kind} className="die-card-icon" />
+        <span className="die-card-name">{die.name}</span>
+        <span className="die-card-zh">{die.zh}</span>
+      </button>
+      {count > 0 && (
+        <>
+          <span className="die-badge" aria-hidden>
+            {count}
+          </span>
+          <button className="die-minus" onClick={() => onAdjust(die.sides, -1)} aria-label={`减少一颗 ${die.name}`}>
+            <IconMinus width={12} height={12} />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function CocForm({ coc, onCoc }: { coc: CocState; onCoc: (c: CocState) => void }) {
   const set = (patch: Partial<CocState>) => onCoc({ ...coc, ...patch });
   const half = Math.floor(coc.skill / 2);
@@ -176,7 +210,7 @@ function CocForm({ coc, onCoc }: { coc: CocState; onCoc: (c: CocState) => void }
   const net = coc.bonus - coc.penalty;
   return (
     <div className="coc-body">
-      <div className="inscription">
+      <div className="inscription coc-name">
         <label className="field-label" htmlFor="skill-name">
           技能名称<span className="latin">Peritia</span>
         </label>
@@ -216,13 +250,13 @@ function CocForm({ coc, onCoc }: { coc: CocState; onCoc: (c: CocState) => void }
         </div>
       </div>
 
-      <div className="field-row">
+      <div className="field-row coc-bonus">
         <div className="field-label">
           奖励骰<span className="latin">Bonus</span>
         </div>
         <Stepper label="奖励骰" value={coc.bonus} min={0} max={3} onChange={(v) => set({ bonus: v })} />
       </div>
-      <div className="field-row">
+      <div className="field-row coc-penalty">
         <div className="field-label">
           惩罚骰<span className="latin">Poena</span>
         </div>
