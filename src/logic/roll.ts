@@ -21,6 +21,14 @@ export type Term = DiceTerm | ConstTerm;
 
 /* ───────────── parsing ───────────── */
 
+/** Parse problems as data; the UI words them in the current language. */
+export type FormulaError =
+  | { code: 'empty' | 'joiner' | 'constTooBig' | 'minCount' | 'keepRange' | 'dropRange' | 'noDice' }
+  | { code: 'unrecognized'; text: string }
+  | { code: 'badSides'; sides: number }
+  | { code: 'maxCount'; max: number }
+  | { code: 'tooMany'; need: number; max: number };
+
 function normalise(src: string): string {
   return src
     .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -29,9 +37,9 @@ function normalise(src: string): string {
     .toLowerCase();
 }
 
-export function parseFormula(src: string): { terms: Term[] } | { error: string } {
+export function parseFormula(src: string): { terms: Term[] } | { error: FormulaError } {
   const s = normalise(src);
-  if (!s) return { error: '表达式为空' };
+  if (!s) return { error: { code: 'empty' } };
   const re = /([+-]?)(?:(\d*)d(\d+|%)(?:(kh|kl|k|dh|dl)(\d+))?|(\d+))/y;
   const terms: Term[] = [];
   let pos = 0;
@@ -39,30 +47,30 @@ export function parseFormula(src: string): { terms: Term[] } | { error: string }
     re.lastIndex = pos;
     const m = re.exec(s);
     if (!m || m.index !== pos || m[0] === '' || m[0] === '+' || m[0] === '-') {
-      return { error: `无法识别：「${s.slice(pos, pos + 6)}」` };
+      return { error: { code: 'unrecognized', text: s.slice(pos, pos + 6) } };
     }
-    if (terms.length && !m[1]) return { error: '各项之间需以 + 或 − 相连' };
+    if (terms.length && !m[1]) return { error: { code: 'joiner' } };
     const sign: 1 | -1 = m[1] === '-' ? -1 : 1;
     if (m[6] !== undefined) {
       const v = parseInt(m[6], 10);
-      if (v > 999) return { error: '常数过大' };
+      if (v > 999) return { error: { code: 'constTooBig' } };
       terms.push({ type: 'const', sign, value: v });
     } else {
       const count = m[2] ? parseInt(m[2], 10) : 1;
       const sides = m[3] === '%' ? 100 : parseInt(m[3], 10);
       if (!(ALLOWED_SIDES as readonly number[]).includes(sides))
-        return { error: `不支持 d${sides}（可用 d4 d6 d8 d10 d12 d20 d100）` };
-      if (count < 1) return { error: '骰子数量至少为 1' };
-      if (count > MAX_PHYSICAL) return { error: `一次最多 ${MAX_PHYSICAL} 颗骰子` };
+        return { error: { code: 'badSides', sides } };
+      if (count < 1) return { error: { code: 'minCount' } };
+      if (count > MAX_PHYSICAL) return { error: { code: 'maxCount', max: MAX_PHYSICAL } };
       const t: DiceTerm = { type: 'dice', sign, count, sides: sides as Sides };
       if (m[4]) {
         const n = parseInt(m[5], 10);
         const mode = m[4];
         if (mode === 'kh' || mode === 'k' || mode === 'kl') {
-          if (n < 1 || n > count) return { error: '保留数需介于 1 与骰数之间' };
+          if (n < 1 || n > count) return { error: { code: 'keepRange' } };
           if (n < count) t.keep = { mode: mode === 'kl' ? 'l' : 'h', n };
         } else {
-          if (n < 0 || n >= count) return { error: '舍弃数需小于骰数' };
+          if (n < 0 || n >= count) return { error: { code: 'dropRange' } };
           if (n > 0) t.keep = { mode: mode === 'dl' ? 'h' : 'l', n: count - n };
         }
       }
@@ -70,9 +78,9 @@ export function parseFormula(src: string): { terms: Term[] } | { error: string }
     }
     pos = re.lastIndex;
   }
-  if (!terms.some((t) => t.type === 'dice')) return { error: '至少需要一组骰子' };
+  if (!terms.some((t) => t.type === 'dice')) return { error: { code: 'noDice' } };
   const phys = physicalCount(terms);
-  if (phys > MAX_PHYSICAL) return { error: `共需 ${phys} 颗骰子，超过上限 ${MAX_PHYSICAL}` };
+  if (phys > MAX_PHYSICAL) return { error: { code: 'tooMany', need: phys, max: MAX_PHYSICAL } };
   return { terms };
 }
 
@@ -196,23 +204,20 @@ export function cocPlan(skill: number, name: string, bonus: number, penalty: num
   const phys: PhysDie[] = [];
   for (let i = 0; i < tens; i++) phys.push({ kind: 'd100', role: 'tens', group: 0, slot: i });
   phys.push({ kind: 'd10', role: 'units', group: 0, slot: 0 });
-  let text = `1d100 ≤ ${skill}`;
-  if (net > 0) text += ` · 奖励骰 ×${net}`;
-  if (net < 0) text += ` · 惩罚骰 ×${-net}`;
-  return { mode: 'coc', skill, name, bonus, penalty, text, phys };
+  return { mode: 'coc', skill, name, bonus, penalty, text: `1d100 ≤ ${skill}`, phys };
 }
 
 /* ───────────── outcomes ───────────── */
 
 export type CocLevel = 'critical' | 'extreme' | 'hard' | 'regular' | 'failure' | 'fumble';
 
-export const COC_LEVELS: Record<CocLevel, { zh: string; en: string; good: boolean }> = {
-  critical: { zh: '大成功', en: 'Critical', good: true },
-  extreme: { zh: '极难成功', en: 'Extreme Success', good: true },
-  hard: { zh: '困难成功', en: 'Hard Success', good: true },
-  regular: { zh: '成功', en: 'Success', good: true },
-  failure: { zh: '失败', en: 'Failure', good: false },
-  fumble: { zh: '大失败', en: 'Fumble', good: false },
+export const COC_GOOD: Record<CocLevel, boolean> = {
+  critical: true,
+  extreme: true,
+  hard: true,
+  regular: true,
+  failure: false,
+  fumble: false,
 };
 
 export function cocLevel(roll: number, skill: number): CocLevel {
@@ -235,12 +240,18 @@ export interface Part {
   dice: PartDie[];
   value: number;
   isConst?: boolean;
+  /** CoC: number of tens dice; the label is worded by the UI */
+  coc?: number;
 }
 
+export type BadgeKey = CocLevel | 'nat20' | 'nat1';
+
 export interface Badge {
-  text: string;
-  en: string;
+  key?: BadgeKey;
   tone: 'gold' | 'crimson' | 'ink';
+  /** pre-i18n saves stored the words themselves */
+  text?: string;
+  en?: string;
 }
 
 export interface Outcome {
@@ -248,9 +259,23 @@ export interface Outcome {
   parts: Part[];
   tags: DieTag[];
   badge?: Badge;
-  /** for coc: threshold line */
+  /** CoC: thresholds, worded by the UI */
+  cocNote?: { skill: number; half: number; fifth: number };
+  /** pre-i18n saves */
   note?: string;
 }
+
+/** English name of a badge, used as the stamp's subtitle in Chinese mode */
+export const BADGE_EN: Record<BadgeKey, string> = {
+  critical: 'Critical',
+  extreme: 'Extreme Success',
+  hard: 'Hard Success',
+  regular: 'Success',
+  failure: 'Failure',
+  fumble: 'Fumble',
+  nat20: 'Natural 20',
+  nat1: 'Natural 1',
+};
 
 const d10Value = (v: number) => (v === 0 ? 10 : v);
 const pct = (t: number, u: number) => (t + u === 0 ? 100 : t + u);
@@ -271,19 +296,19 @@ export function evaluate(plan: Plan, dice: SettledDie[]): Outcome {
     }
     const roll = chosen.v;
     const level = cocLevel(roll, plan.skill);
-    const info = COC_LEVELS[level];
-    tensIdx.forEach((i) => (tags[i] = { text: dice[i].label, tone: i === chosen.i ? (info.good ? 'gold' : 'crimson') : 'muted' }));
-    tags[unitsIdx] = { text: dice[unitsIdx].label, tone: info.good ? 'gold' : 'crimson' };
+    const good = COC_GOOD[level];
+    tensIdx.forEach((i) => (tags[i] = { text: dice[i].label, tone: i === chosen.i ? (good ? 'gold' : 'crimson') : 'muted' }));
+    tags[unitsIdx] = { text: dice[unitsIdx].label, tone: good ? 'gold' : 'crimson' };
     const partDice: PartDie[] = tensIdx.map((i) => ({ text: dice[i].label, tone: i === chosen.i ? 'plain' : 'muted' }));
     partDice.push({ text: dice[unitsIdx].label, tone: 'plain' });
     const half = Math.floor(plan.skill / 2);
     const fifth = Math.floor(plan.skill / 5);
     return {
       total: roll,
-      parts: [{ label: tensIdx.length > 1 ? `十位 ×${tensIdx.length} · 个位` : '十位 · 个位', sign: 1, dice: partDice, value: roll }],
+      parts: [{ label: '', coc: tensIdx.length, sign: 1, dice: partDice, value: roll }],
       tags,
-      badge: { text: info.zh, en: info.en, tone: info.good ? (level === 'critical' ? 'gold' : 'ink') : 'crimson' },
-      note: `常规 ≤${plan.skill} · 困难 ≤${half} · 极难 ≤${fifth}`,
+      badge: { key: level, tone: good ? (level === 'critical' ? 'gold' : 'ink') : 'crimson' },
+      cocNote: { skill: plan.skill, half, fifth },
     };
   }
 
@@ -338,7 +363,7 @@ export function evaluate(plan: Plan, dice: SettledDie[]): Outcome {
     total += t.sign * sub;
   });
   let badge: Badge | undefined;
-  if (nat === 'nat20') badge = { text: '自然 20', en: 'Natural 20', tone: 'gold' };
-  else if (nat === 'nat1') badge = { text: '自然 1', en: 'Natural 1', tone: 'crimson' };
+  if (nat === 'nat20') badge = { key: 'nat20', tone: 'gold' };
+  else if (nat === 'nat1') badge = { key: 'nat1', tone: 'crimson' };
   return { total, parts, tags, badge };
 }

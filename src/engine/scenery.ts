@@ -25,12 +25,12 @@ export const TRAY = {
   outerRadius: 3.0,
 };
 
-export const FELT_COLORS: Record<string, { name: string; color: string; sheen: string }> = {
-  oxblood: { name: '红', color: '#6a1a22', sheen: '#c0505a' },
-  forest: { name: '绿', color: '#1b3a2b', sheen: '#4f8a68' },
-  midnight: { name: '蓝', color: '#17213f', sheen: '#4a64a8' },
-  ebony: { name: '黑', color: '#1d1916', sheen: '#6a5a4c' },
-  violet: { name: '紫', color: '#35193f', sheen: '#7a4a90' },
+export const FELT_COLORS: Record<string, { name: string; nameEn: string; color: string; sheen: string }> = {
+  oxblood: { name: '红', nameEn: 'Red', color: '#6a1a22', sheen: '#c0505a' },
+  forest: { name: '绿', nameEn: 'Green', color: '#1b3a2b', sheen: '#4f8a68' },
+  midnight: { name: '蓝', nameEn: 'Blue', color: '#17213f', sheen: '#4a64a8' },
+  ebony: { name: '黑', nameEn: 'Black', color: '#1d1916', sheen: '#6a5a4c' },
+  violet: { name: '紫', nameEn: 'Purple', color: '#35193f', sheen: '#7a4a90' },
 };
 
 function roundedRect(w: number, h: number, r: number, path: THREE.Path | THREE.Shape) {

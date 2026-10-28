@@ -17,6 +17,8 @@ export interface DiceStyle {
   name: string;
   latin: string;
   blurb: string;
+  nameEn?: string;
+  blurbEn?: string;
   swatch: string;
   /** relative density, resin = 1 */
   density: number;
@@ -69,6 +71,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '红金树脂',
     latin: 'Resina Rubra',
     blurb: '半透明深红树脂，内含金色纹路',
+    nameEn: 'Red & Gold Resin',
+    blurbEn: 'Translucent deep red resin with gold veins',
     swatch: 'radial-gradient(circle at 30% 28%, #c0283a 0%, #6d0b16 42%, #2a0307 100%)',
     density: 1,
     body: {
@@ -103,6 +107,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '黑曜石',
     latin: 'Obsidianus',
     blurb: '黑色玻璃质，带一层虹彩',
+    nameEn: 'Obsidian',
+    blurbEn: 'Black volcanic glass with an iridescent sheen',
     swatch: 'conic-gradient(from 210deg at 60% 40%, #0a0a0c, #2b1d3a, #0b0b0d, #183041, #0a0a0c)',
     density: 2.1,
     body: {
@@ -129,6 +135,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '星云',
     latin: 'Nebula',
     blurb: '深蓝紫色云纹，带细小闪点',
+    nameEn: 'Nebula',
+    blurbEn: 'Deep blue-violet clouds with fine sparkles',
     swatch: 'radial-gradient(circle at 70% 30%, #3fd0c9 0%, transparent 28%), radial-gradient(circle at 30% 70%, #6a2bb3 0%, transparent 45%), #070a26',
     density: 1,
     body: {
@@ -157,6 +165,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '象牙白',
     latin: 'Eburneus',
     blurb: '米白色，带浅褐色细纹',
+    nameEn: 'Ivory',
+    blurbEn: 'Off-white with fine brown veining',
     swatch: 'linear-gradient(135deg, #f1e6cc 0%, #d8c49a 55%, #a88a5a 100%)',
     density: 1.6,
     body: {
@@ -184,6 +194,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '翡翠',
     latin: 'Iaspis',
     blurb: '深绿色半透明，带浅色絮纹',
+    nameEn: 'Jade',
+    blurbEn: 'Translucent deep green with pale clouding',
     swatch: 'radial-gradient(circle at 35% 30%, #9fd8b0 0%, #2f8a5a 38%, #0f3a24 100%)',
     density: 2.8,
     body: {
@@ -214,6 +226,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '紫水晶',
     latin: 'Amethystus',
     blurb: '透明紫色',
+    nameEn: 'Amethyst',
+    blurbEn: 'Clear violet',
     swatch: 'linear-gradient(160deg, #c9a4ff 0%, #7b3fd0 45%, #2c0f5a 100%)',
     density: 2.2,
     body: {
@@ -243,6 +257,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '月光石',
     latin: 'Selenites',
     blurb: '乳白色，随角度泛蓝色光晕',
+    nameEn: 'Moonstone',
+    blurbEn: 'Milky white with a blue glow at an angle',
     swatch: 'radial-gradient(circle at 40% 35%, #ffffff 0%, #c9d6f2 40%, #7f93c4 100%)',
     density: 2.2,
     body: {
@@ -276,6 +292,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '黄铜',
     latin: 'Orichalcum',
     blurb: '磨砂黄铜，金属质地，较重',
+    nameEn: 'Brass',
+    blurbEn: 'Brushed solid brass; heavy',
     swatch: 'linear-gradient(135deg, #f3d48a 0%, #b5893c 45%, #5e4318 100%)',
     density: 7,
     body: {
@@ -299,6 +317,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '血石',
     latin: 'Heliotropium',
     blurb: '深绿色，带红色斑点',
+    nameEn: 'Bloodstone',
+    blurbEn: 'Dark green with red flecks',
     swatch: 'radial-gradient(circle at 30% 40%, #a01818 0 6%, transparent 7%), radial-gradient(circle at 65% 60%, #8a1414 0 5%, transparent 6%), linear-gradient(135deg, #24503a, #0d2418)',
     density: 2.2,
     body: {
@@ -324,6 +344,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '熔岩',
     latin: 'Lava',
     blurb: '黑色，裂纹透出橙色光',
+    nameEn: 'Lava',
+    blurbEn: 'Black with glowing orange cracks',
     swatch: 'radial-gradient(circle at 50% 50%, #ff7a2a 0%, #a8240a 22%, #120806 60%)',
     density: 1.1,
     body: {
@@ -350,6 +372,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '琥珀',
     latin: 'Succinum',
     blurb: '半透明橙黄色，带深色杂质',
+    nameEn: 'Amber',
+    blurbEn: 'Translucent honey orange with dark inclusions',
     swatch: 'radial-gradient(circle at 35% 30%, #ffd27a 0%, #d8801c 45%, #6e3406 100%)',
     density: 0.9,
     body: {
@@ -381,6 +405,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '蓝宝石',
     latin: 'Sapphirus',
     blurb: '透明深蓝色',
+    nameEn: 'Sapphire',
+    blurbEn: 'Clear deep blue',
     swatch: 'linear-gradient(160deg, #7aa2ff 0%, #1d3fa8 45%, #050f3a 100%)',
     density: 3.4,
     body: {
@@ -410,6 +436,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '铜锈',
     latin: 'Aerugo',
     blurb: '磨砂红铜，带青绿色锈斑',
+    nameEn: 'Verdigris',
+    blurbEn: 'Brushed copper with blue-green patina',
     swatch: 'radial-gradient(circle at 30% 35%, #5cc3a8 0 18%, transparent 36%), radial-gradient(circle at 70% 70%, #3a9a84 0 14%, transparent 30%), linear-gradient(135deg, #c27a48, #6a3418)',
     density: 7,
     body: {
@@ -433,6 +461,8 @@ export const DICE_STYLES: DiceStyle[] = [
     name: '白大理石',
     latin: 'Marmor',
     blurb: '白色，带灰色纹路',
+    nameEn: 'White Marble',
+    blurbEn: 'White with grey veining',
     swatch: 'linear-gradient(120deg, #f4f1ea 0%, #f4f1ea 40%, #8f8f94 42%, #f4f1ea 44%, #e5e1d8 70%, #9a9aa0 72%, #efece4 74%)',
     density: 2.2,
     body: {

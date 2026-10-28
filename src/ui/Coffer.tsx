@@ -4,25 +4,20 @@ import { countOf, modifierOf, physicalCount, MAX_PHYSICAL, type Sides, type Term
 import type { CocState } from '../state';
 import { Corner, DieIcon, Fleuron, IconMinus } from './Icons';
 import { ScrollArea, Segmented, Slider, Stepper } from './controls';
+import { useI18n } from '../i18n';
 
-const DICE: { sides: Sides; kind: DieKind; name: string; zh: string }[] = [
-  { sides: 4, kind: 'd4', name: 'D4', zh: '四面' },
-  { sides: 6, kind: 'd6', name: 'D6', zh: '六面' },
-  { sides: 8, kind: 'd8', name: 'D8', zh: '八面' },
-  { sides: 10, kind: 'd10', name: 'D10', zh: '十面' },
-  { sides: 12, kind: 'd12', name: 'D12', zh: '十二面' },
-  { sides: 20, kind: 'd20', name: 'D20', zh: '二十面' },
-  { sides: 100, kind: 'd100', name: 'D%', zh: '百面' },
+const DICE: { sides: Sides; kind: DieKind; name: string }[] = [
+  { sides: 4, kind: 'd4', name: 'D4' },
+  { sides: 6, kind: 'd6', name: 'D6' },
+  { sides: 8, kind: 'd8', name: 'D8' },
+  { sides: 10, kind: 'd10', name: 'D10' },
+  { sides: 12, kind: 'd12', name: 'D12' },
+  { sides: 20, kind: 'd20', name: 'D20' },
+  { sides: 100, kind: 'd100', name: 'D%' },
 ];
 
-const PRESETS: { label: string; formula: string; hint: string }[] = [
-  { label: '优势', formula: '2d20kh1', hint: '两颗 d20 取较高者' },
-  { label: '劣势', formula: '2d20kl1', hint: '两颗 d20 取较低者' },
-  { label: 'D&D 属性', formula: '4d6kh3', hint: '4d6 去掉最低的一颗' },
-  { label: 'CoC 属性', formula: '3d6', hint: '三颗 d6 求和' },
-  { label: '百分骰', formula: '1d100', hint: '十位骰 + 个位骰' },
-  { label: '伤害', formula: '8d6', hint: '八颗 d6 求和' },
-];
+/** label and tooltip come from the message table, keyed by formula */
+const PRESETS = ['2d20kh1', '2d20kl1', '4d6kh3', '3d6', '1d100', '8d6'];
 
 export interface CofferProps {
   mode: 'formula' | 'coc';
@@ -43,32 +38,34 @@ export interface CofferProps {
 }
 
 export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, ref) {
+  const { t } = useI18n();
   const mod = modifierOf(p.terms);
   const phys = physicalCount(p.terms);
   const [focused, setFocused] = useState(false);
 
   return (
-    <aside ref={ref} className={`panel coffer ${p.collapsed ? 'is-collapsed' : ''}`} aria-label="骰子盒">
+    <aside ref={ref} className={`panel coffer ${p.collapsed ? 'is-collapsed' : ''}`} aria-label={t.coffer.title}>
       <Corner className="corner tl" />
       <Corner className="corner tr" />
       <Corner className="corner bl" />
       <Corner className="corner br" />
       {p.onToggleCollapsed && (
-        <button className="sheet-handle" onClick={p.onToggleCollapsed} aria-label={p.collapsed ? '展开面板' : '收起面板'}>
+        <button className="sheet-handle" onClick={p.onToggleCollapsed} aria-label={p.collapsed ? t.coffer.expand : t.coffer.collapse}>
           <span />
         </button>
       )}
       <header className="panel-head">
         <h2>
-          骰子盒<span className="latin">Arca Alearum</span>
+          {t.coffer.title}
+          <span className="latin">Arca Alearum</span>
         </h2>
         <Segmented
-          label="掷骰模式"
+          label={t.coffer.modeLabel}
           value={p.mode}
           onChange={p.onMode}
           options={[
-            { value: 'formula', label: '普通掷骰' },
-            { value: 'coc', label: 'CoC 检定' },
+            { value: 'formula', label: t.coffer.modeFormula },
+            { value: 'coc', label: t.coffer.modeCoc },
           ]}
         />
       </header>
@@ -88,21 +85,23 @@ export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, re
               ))}
               <button className="die-card die-card-clear" onClick={p.onClearDice} disabled={phys === 0}>
                 <span className="clear-glyph">∅</span>
-                <span className="die-card-name">清空</span>
+                <span className="die-card-name">{t.coffer.clear}</span>
                 <span className="die-card-zh">Vacua</span>
               </button>
             </div>
 
             <div className="field-row mod-row">
               <div className="field-label">
-                调整值<span className="latin">Modificator</span>
+                {t.coffer.modifier}
+                <span className="latin">Modificator</span>
               </div>
-              <Stepper label="调整值" value={mod} min={-99} max={99} onChange={p.onModifier} format={(v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '±0')} />
+              <Stepper label={t.coffer.modifier} value={mod} min={-99} max={99} onChange={p.onModifier} format={(v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '±0')} />
             </div>
 
             <div className={`inscription ${focused ? 'is-focused' : ''} ${p.draftError ? 'has-error' : ''}`}>
               <label className="field-label" htmlFor="formula">
-                表达式<span className="latin">Formula</span>
+                {t.coffer.formula}
+                <span className="latin">Formula</span>
               </label>
               <input
                 id="formula"
@@ -120,19 +119,19 @@ export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, re
                     p.onSubmit();
                   }
                 }}
-                placeholder="如 2d6 + 1d8 + 3"
+                placeholder={t.coffer.formulaPlaceholder}
               />
               <span className="inscription-line" />
-              <p className="inscription-msg">{p.draftError || `共 ${phys} 颗骰子 · 回车掷骰`}</p>
+              <p className="inscription-msg">{p.draftError || t.coffer.count(phys)}</p>
             </div>
 
             <div className="presets">
               <Fleuron className="mini-fleuron" />
               <div className="chips">
-                {PRESETS.map((c) => (
-                  <button key={c.formula} className="chip" onClick={() => p.onPreset(c.formula)} data-tip={c.hint}>
-                    <span>{c.label}</span>
-                    <em>{c.formula}</em>
+                {PRESETS.map((f) => (
+                  <button key={f} className="chip" onClick={() => p.onPreset(f)} data-tip={t.coffer.presets[f][1]}>
+                    <span>{t.coffer.presets[f][0]}</span>
+                    <em>{f}</em>
                   </button>
                 ))}
               </div>
@@ -148,6 +147,7 @@ export const Coffer = forwardRef<HTMLElement, CofferProps>(function Coffer(p, re
 
 /** Tap adds a die; right-click, the − button, or a long press on touch screens removes one. */
 function DieCard({ die, count, full, onAdjust }: { die: (typeof DICE)[number]; count: number; full: boolean; onAdjust: (sides: Sides, delta: number) => void }) {
+  const { t } = useI18n();
   const timer = useRef<number | undefined>(undefined);
   const longPressed = useRef(false);
   const startPress = (e: ReactPointerEvent) => {
@@ -183,18 +183,18 @@ function DieCard({ die, count, full, onAdjust }: { die: (typeof DICE)[number]; c
           if (count) onAdjust(die.sides, -1);
         }}
         disabled={full}
-        aria-label={`增加一颗 ${die.name}，当前 ${count} 颗（长按或右键减少）`}
+        aria-label={t.coffer.addDie(die.name, count)}
       >
         <DieIcon kind={die.kind} className="die-card-icon" />
         <span className="die-card-name">{die.name}</span>
-        <span className="die-card-zh">{die.zh}</span>
+        <span className="die-card-zh">{t.coffer.dieNames[die.kind]}</span>
       </button>
       {count > 0 && (
         <>
           <span className="die-badge" aria-hidden>
             {count}
           </span>
-          <button className="die-minus" onClick={() => onAdjust(die.sides, -1)} aria-label={`减少一颗 ${die.name}`}>
+          <button className="die-minus" onClick={() => onAdjust(die.sides, -1)} aria-label={t.coffer.removeDie(die.name)}>
             <IconMinus width={12} height={12} />
           </button>
         </>
@@ -204,6 +204,7 @@ function DieCard({ die, count, full, onAdjust }: { die: (typeof DICE)[number]; c
 }
 
 function CocForm({ coc, onCoc }: { coc: CocState; onCoc: (c: CocState) => void }) {
+  const { t } = useI18n();
   const set = (patch: Partial<CocState>) => onCoc({ ...coc, ...patch });
   const half = Math.floor(coc.skill / 2);
   const fifth = Math.floor(coc.skill / 5);
@@ -212,14 +213,15 @@ function CocForm({ coc, onCoc }: { coc: CocState; onCoc: (c: CocState) => void }
     <div className="coc-body">
       <div className="inscription coc-name">
         <label className="field-label" htmlFor="skill-name">
-          技能名称<span className="latin">Peritia</span>
+          {t.coc.skillName}
+          <span className="latin">Peritia</span>
         </label>
         <input
           id="skill-name"
           className="inscription-input"
           value={coc.name}
           maxLength={16}
-          placeholder="如 侦查、图书馆使用、理智"
+          placeholder={t.coc.skillNamePlaceholder}
           onChange={(e) => set({ name: e.target.value })}
         />
         <span className="inscription-line" />
@@ -227,47 +229,46 @@ function CocForm({ coc, onCoc }: { coc: CocState; onCoc: (c: CocState) => void }
 
       <div className="skill-dial">
         <div className="field-label">
-          技能值<span className="latin">Valor</span>
+          {t.coc.skill}
+          <span className="latin">Valor</span>
         </div>
         <div className="skill-value">
-          <Stepper label="技能值" value={coc.skill} min={1} max={99} onChange={(v) => set({ skill: v })} size="lg" />
+          <Stepper label={t.coc.skill} value={coc.skill} min={1} max={99} onChange={(v) => set({ skill: v })} size="lg" />
         </div>
-        <Slider label="技能值" value={coc.skill} min={1} max={99} onChange={(v) => set({ skill: v })} marks={[25, 50, 75]} />
+        <Slider label={t.coc.skill} value={coc.skill} min={1} max={99} onChange={(v) => set({ skill: v })} marks={[25, 50, 75]} />
       </div>
 
       <div className="thresholds">
         <div>
-          <span className="th-label">常规</span>
+          <span className="th-label">{t.coc.regular}</span>
           <span className="th-val">≤ {coc.skill}</span>
         </div>
         <div>
-          <span className="th-label">困难</span>
+          <span className="th-label">{t.coc.hard}</span>
           <span className="th-val">≤ {half}</span>
         </div>
         <div>
-          <span className="th-label">极难</span>
+          <span className="th-label">{t.coc.extreme}</span>
           <span className="th-val">≤ {fifth}</span>
         </div>
       </div>
 
       <div className="field-row coc-bonus">
         <div className="field-label">
-          奖励骰<span className="latin">Bonus</span>
+          {t.coc.bonus}
+          <span className="latin">Bonus</span>
         </div>
-        <Stepper label="奖励骰" value={coc.bonus} min={0} max={3} onChange={(v) => set({ bonus: v })} />
+        <Stepper label={t.coc.bonus} value={coc.bonus} min={0} max={3} onChange={(v) => set({ bonus: v })} />
       </div>
       <div className="field-row coc-penalty">
         <div className="field-label">
-          惩罚骰<span className="latin">Poena</span>
+          {t.coc.penalty}
+          <span className="latin">Poena</span>
         </div>
-        <Stepper label="惩罚骰" value={coc.penalty} min={0} max={3} onChange={(v) => set({ penalty: v })} />
+        <Stepper label={t.coc.penalty} value={coc.penalty} min={0} max={3} onChange={(v) => set({ penalty: v })} />
       </div>
 
-      <p className="coc-note">
-        将掷出一颗个位骰和 <b>{1 + Math.abs(net)}</b> 颗十位骰
-        {net > 0 ? '，取最低的十位。' : net < 0 ? '，取最高的十位。' : '。'}
-        奖励骰与惩罚骰相互抵消。掷出 01 为大成功，{coc.skill < 50 ? '96–100' : '100'} 为大失败。
-      </p>
+      <p className="coc-note">{t.coc.note(1 + Math.abs(net), net, coc.skill)}</p>
     </div>
   );
 }

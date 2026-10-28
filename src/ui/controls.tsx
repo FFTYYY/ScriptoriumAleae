@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Corner, Fleuron, IconClose, IconMinus, IconPlus } from './Icons';
+import { useI18n } from '../i18n';
 
 /* ───────────────────────── custom scroll area ───────────────────────── */
 
@@ -112,6 +113,7 @@ export function Modal({
   wide?: boolean;
   footer?: ReactNode;
 }) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(open);
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -170,7 +172,7 @@ export function Modal({
             <h2 id={titleId}>{title}</h2>
             {latin && <p className="latin">{latin}</p>}
           </div>
-          <button className="icon-btn ghost" onClick={onClose} aria-label="关闭" data-tip="关闭 · Esc">
+          <button className="icon-btn ghost" onClick={onClose} aria-label={t.controls.close} data-tip={t.controls.closeTip}>
             <IconClose width={18} height={18} />
           </button>
         </header>
@@ -231,6 +233,7 @@ export function Stepper({
   label: string;
   size?: 'sm' | 'md' | 'lg';
 }) {
+  const { t } = useI18n();
   const vRef = useRef(value);
   vRef.current = value;
   const set = (v: number) => onChange(Math.max(min, Math.min(max, v)));
@@ -245,7 +248,7 @@ export function Stepper({
         onPointerDown={dec.start}
         onPointerUp={dec.stop}
         onPointerLeave={dec.stop}
-        aria-label={`${label} 减一`}
+        aria-label={t.controls.minus(label)}
       >
         <IconMinus width={14} height={14} />
       </button>
@@ -259,7 +262,7 @@ export function Stepper({
         onPointerDown={inc.start}
         onPointerUp={inc.stop}
         onPointerLeave={inc.stop}
-        aria-label={`${label} 加一`}
+        aria-label={t.controls.plus(label)}
       >
         <IconPlus width={14} height={14} />
       </button>
@@ -347,12 +350,13 @@ export function Slider({
 /* ───────────────────────── toggle & segmented ───────────────────────── */
 
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  const { t } = useI18n();
   return (
     <button className={`toggle ${checked ? 'on' : ''}`} role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}>
       <span className="toggle-track">
         <span className="toggle-knob" />
       </span>
-      <span className="toggle-text">{checked ? '开' : '关'}</span>
+      <span className="toggle-text">{checked ? t.controls.on : t.controls.off}</span>
     </button>
   );
 }

@@ -44,7 +44,8 @@ export interface TableEvents {
   onRollStart(id: number): void;
   onSettled(id: number, dice: SettledDie[], info: { nudged: number; seconds: number }): void;
   onHoldChange(holding: boolean): void;
-  onNotice(msg: string): void;
+  /** 'empty': the player pressed on the table with no dice chosen */
+  onNotice(code: 'empty'): void;
   /** the user took over (true) or handed back (false) the camera */
   onViewChange?(manual: boolean): void;
 }
@@ -724,7 +725,7 @@ export class DiceTable {
     this.audio.unlock();
     const reqs = this.events.requestDice();
     if (!reqs || !reqs.length) {
-      this.events.onNotice('还没有选择骰子。');
+      this.events.onNotice('empty');
       return;
     }
     e.preventDefault();

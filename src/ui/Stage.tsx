@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import type { Outcome, Plan } from '../logic/roll';
 import { Fleuron, IconSweep, sealPath, Sigil } from './Icons';
+import { badgeWords, partLabel, useI18n } from '../i18n';
 
 export type Phase = 'idle' | 'holding' | 'rolling' | 'settled';
 
@@ -32,11 +33,14 @@ function useCountUp(target: number, key: number | undefined) {
 }
 
 export function Verdict({ result, visible }: { result: ShownResult | null; visible: boolean }) {
+  const { t } = useI18n();
   const total = useCountUp(result?.outcome.total ?? 0, result?.id);
   if (!result) return <div className="verdict-wrap" aria-hidden />;
   const { plan, outcome } = result;
-  const title = plan.mode === 'coc' ? (plan.name ? `${plan.name} 检定` : '技能检定') : plan.text;
+  const title = plan.mode === 'coc' ? t.coc.verdictTitle(plan.name) : plan.text;
   const badge = outcome.badge;
+  const words = badge ? badgeWords(t, badge) : null;
+  const note = outcome.cocNote ? t.coc.thresholds(outcome.cocNote.skill, outcome.cocNote.half, outcome.cocNote.fifth) : outcome.note;
   const many = outcome.parts.reduce((n, p) => n + p.dice.length, 0) > 14;
   return (
     <div className="verdict-wrap">
@@ -44,7 +48,7 @@ export function Verdict({ result, visible }: { result: ShownResult | null; visib
         <div className="verdict-glow" aria-hidden />
         <div className="verdict-main">
           <div className="verdict-kicker">
-            <span>结果 · EXITUS</span>
+            <span>{t.verdict.kicker}</span>
             <Fleuron className="kicker-fleuron" />
           </div>
           <div className="verdict-title">{title}</div>
@@ -56,7 +60,7 @@ export function Verdict({ result, visible }: { result: ShownResult | null; visib
                   <span className="const">{p.value}</span>
                 ) : (
                   <>
-                    <span className="vlabel">{p.label}</span>
+                    <span className="vlabel">{partLabel(t, p)}</span>
                     <span className="vrolls">
                       {p.dice.map((d, j) => (
                         <i key={j} className={`r tone-${d.tone}`}>
@@ -69,17 +73,17 @@ export function Verdict({ result, visible }: { result: ShownResult | null; visib
               </span>
             ))}
           </div>
-          {outcome.note && <div className="verdict-note">{outcome.note}</div>}
-          {result.nudged > 0 && <div className="verdict-foot">有骰子斜靠未放平，已轻推 {result.nudged} 次使其倒下</div>}
+          {note && <div className="verdict-note">{note}</div>}
+          {result.nudged > 0 && <div className="verdict-foot">{t.verdict.nudged(result.nudged)}</div>}
         </div>
         <div className="verdict-rule" aria-hidden />
-        <div className="verdict-total" aria-label={`总计 ${outcome.total}`}>
+        <div className="verdict-total" aria-label={t.verdict.total(outcome.total)}>
           {total}
         </div>
-        {badge && (
+        {badge && words && (
           <div className={`stamp tone-${badge.tone}`}>
-            <span>{badge.text}</span>
-            <em>{badge.en}</em>
+            <span>{words.main}</span>
+            {words.sub && <em>{words.sub}</em>}
           </div>
         )}
       </section>
@@ -87,26 +91,20 @@ export function Verdict({ result, visible }: { result: ShownResult | null; visib
   );
 }
 
-const HINT: Record<Phase, string> = {
-  idle: '点击按钮或按空格掷骰；也可以在桌面上按住、拖动，松开即掷出',
-  holding: '松开即掷出',
-  rolling: '掷骰中…',
-  settled: '滚轮缩放 · 中键拖动旋转 · 右键拖动平移',
-};
-
 export const Dock = forwardRef<
   HTMLDivElement,
   { phase: Phase; onRoll: () => void; onClear: () => void; fast: boolean; onFast: () => void; canClear: boolean; touch?: boolean }
 >(function Dock({ phase, onRoll, onClear, fast, onFast, canClear, touch }, ref) {
+  const { t } = useI18n();
   const outline = useMemo(() => sealPath(52, 60, 60, 1.7), []);
   const inner = useMemo(() => sealPath(38, 60, 60, 4.1), []);
   return (
     <div ref={ref} className={`dock phase-${phase}`}>
       <div className="dock-row">
-        <button className="icon-btn" onClick={onClear} disabled={!canClear} aria-label="清空桌面" data-tip="清空桌面">
+        <button className="icon-btn" onClick={onClear} disabled={!canClear} aria-label={t.dock.clear} data-tip={t.dock.clear}>
           <IconSweep width={19} height={19} />
         </button>
-        <button className="seal" onClick={onRoll} aria-label="掷骰（空格）">
+        <button className="seal" onClick={onRoll} aria-label={t.dock.roll}>
           <svg className="seal-svg" viewBox="0 0 120 120" aria-hidden>
             <defs>
               <radialGradient id="wax" cx="38%" cy="32%" r="75%">
@@ -133,32 +131,33 @@ export const Dock = forwardRef<
               })}
             </g>
           </svg>
-          <span className="seal-glyph">掷</span>
+          <span className="seal-glyph">{t.dock.glyph}</span>
           <span className="seal-ring" aria-hidden />
         </button>
-        <button className={`icon-btn ${fast ? 'is-on' : ''}`} onClick={onFast} aria-label="快放" aria-pressed={fast} data-tip={fast ? '恢复默认速度 0.35×' : '快放：真实速度 1×'}>
+        <button className={`icon-btn ${fast ? 'is-on' : ''}`} onClick={onFast} aria-label={t.dock.fast} aria-pressed={fast} data-tip={fast ? t.dock.fastOn : t.dock.fastOff}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden>
             <path d="M3.5 6.5v11l8-5.5zM12 6.5v11l8-5.5z" />
           </svg>
         </button>
       </div>
-      <p className="dock-hint">{touch && phase === 'settled' ? '双指捏合缩放 · 双指拖动旋转' : touch && phase === 'idle' ? '点击按钮掷骰，或在桌面上按住拖动后松开' : HINT[phase]}</p>
+      <p className="dock-hint">{touch && phase === 'settled' ? t.dock.touchHint.settled : touch && phase === 'idle' ? t.dock.touchHint.idle : t.dock.hint[phase]}</p>
     </div>
   );
 });
 
 export function Loader({ done, error }: { done: boolean; error: string | null }) {
+  const { t } = useI18n();
   return (
     <div className={`loader ${done && !error ? 'is-done' : ''}`} role="status">
       <Sigil className="loader-sigil" />
       {error ? (
         <>
-          <p className="loader-text">加载失败</p>
+          <p className="loader-text">{t.loader.failed}</p>
           <p className="loader-sub">{error}</p>
         </>
       ) : (
         <>
-          <p className="loader-text">正在加载…</p>
+          <p className="loader-text">{t.loader.loading}</p>
         </>
       )}
     </div>

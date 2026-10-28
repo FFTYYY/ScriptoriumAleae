@@ -3243,8 +3243,41 @@ button {
 }
 
 .layout-sheet .dice-grid {
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 5px;
+}
+
+/* the landscape column is narrow too: icon over label, − in the corner */
+.layout-side .dice-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.layout-side .die-card-main,
+.layout-side .die-card-clear {
+  flex-direction: column;
+  gap: 1px;
+}
+
+.layout-side .die-card-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.layout-side .die-card-name {
+  font-size: 10.5px;
+}
+
+.layout-side .die-card.has .die-card-main {
+  padding-left: 0;
+}
+
+.layout-side .die-minus {
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  transform: none;
 }
 
 .layout-sheet .die-card {
@@ -3388,7 +3421,7 @@ button {
   right: -50vw;
   bottom: -6px;
   height: 128px;
-  background: linear-gradient(to top, rgba(6, 4, 3, 0.88), rgba(6, 4, 3, 0.5) 55%, transparent);
+  background: linear-gradient(to top, rgba(6, 4, 3, 0.94), rgba(6, 4, 3, 0.82) 60%, transparent);
   pointer-events: none;
   z-index: -1;
 }
@@ -3521,6 +3554,150 @@ button {
   min-width: 32px;
   padding: 5px 2px;
   font-size: 14px;
+}
+
+/* ───────────────────────── English ───────────────────────── */
+
+/* Latin text reads best in the Latin faces; the wide CJK tracking is dropped */
+html:lang(en) {
+  --f-cn: var(--f-body);
+}
+
+.lang-btn {
+  font-family: var(--f-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.lang-btn:lang(zh) {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+:lang(en) .brand h1 {
+  font-family: var(--f-display);
+  font-size: 21px;
+  letter-spacing: 0.12em;
+}
+
+:lang(en) .panel-head h2,
+:lang(en) .modal-head h2 {
+  font-family: var(--f-display);
+  letter-spacing: 0.16em;
+}
+
+:lang(en) .set-section h3,
+:lang(en) .codex h3 {
+  font-family: var(--f-display);
+  font-size: 15px;
+  letter-spacing: 0.1em;
+}
+
+:lang(en) .field-label,
+:lang(en) .segmented button,
+:lang(en) .chip span,
+:lang(en) .dock-hint,
+:lang(en) .toast,
+:lang(en) .view-reset,
+:lang(en) .th-label,
+:lang(en) .style-name,
+:lang(en) .felt-dot em,
+:lang(en) .ledger-empty p,
+:lang(en) .loader-text,
+:lang(en) .verdict-note,
+:lang(en) .toggle-text {
+  letter-spacing: 0.03em;
+}
+
+:lang(en) .field-label,
+:lang(en) .segmented button,
+:lang(en) .dock-hint,
+:lang(en) .toast,
+:lang(en) .view-reset {
+  font-size: 15px;
+}
+
+:lang(en) .chip span {
+  font-size: 14.5px;
+}
+
+:lang(en) .style-name {
+  font-size: 16.5px;
+}
+
+:lang(en) .die-card-zh {
+  font-style: italic;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+}
+
+:lang(en) .btn {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+:lang(en) [data-tip]::after {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+:lang(en) .set-desc,
+:lang(en) .coc-note,
+:lang(en) .codex-p,
+:lang(en) .codex-list li,
+:lang(en) .codex-table td,
+:lang(en) .confirm-body {
+  font-size: 16.5px;
+}
+
+:lang(en) .seal-glyph {
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  transform: none;
+}
+
+:lang(en) .stamp {
+  font-family: var(--f-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+:lang(en) .entry-badge {
+  font-family: var(--f-display);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+:lang(en) .loader-text {
+  font-family: var(--f-display);
+  font-size: 15px;
+  letter-spacing: 0.24em;
+}
+
+@media (max-width: 900px), (max-height: 520px) {
+  :lang(en) .brand h1 {
+    font-size: 17px;
+    letter-spacing: 0.08em;
+  }
+  :lang(en) .seal-glyph {
+    font-size: 12px;
+  }
+  :lang(en) .segmented button {
+    font-size: 14px;
+  }
+  :lang(en) .stamp {
+    font-size: 11px;
+  }
+}
+
+.layout-side :lang(en) .seal-glyph,
+:lang(en) .layout-side .seal-glyph {
+  font-size: 11px;
 }
 
 @media (prefers-reduced-motion: reduce) {
